@@ -2,7 +2,28 @@
 
 Webbapp som styr volym, ljus och låtbyte genom att luta och skaka telefonen. Musiken spelas i webbläsaren och ljuset är simulerat.
 
-Projektet är en enda statisk fil: [index.html](index.html).
+Statisk webbapp: [index.html](index.html) och [ha.js](ha.js).
+
+## Home Assistant
+
+Tryck på **Home Assistant** på startskärmen och fyll i:
+
+- Adress till Home Assistant.
+- Long-Lived Access Token (skapas under din användarprofil i Home Assistant).
+- Ljus (`light.…`): styrs av lutning framåt/bakåt.
+- Mediaspelare (`media_player.…`): volym styrs av lutning åt sidan, skaka byter låt.
+
+Inställningarna sparas i webbläsaren på enheten. Utan mediaspelare spelas ljud i webbläsaren.
+
+Home Assistant måste tillåta appens adress i `configuration.yaml`:
+
+```yaml
+http:
+  cors_allowed_origins:
+    - http://localhost:8080
+```
+
+Om appen körs över HTTPS måste Home Assistant också nås över HTTPS.
 
 ## Köra lokalt
 

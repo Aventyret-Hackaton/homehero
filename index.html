@@ -100,7 +100,7 @@ footer{padding:14px 18px 18px;display:grid;gap:14px}
 .readout.frozen .val{color:var(--muted)}
 
 /* Start screen */
-.start{position:fixed;inset:0;z-index:20;background:var(--bg);display:flex;align-items:center;justify-content:center;
+.start{overflow-y:auto;position:fixed;inset:0;z-index:20;background:var(--bg);display:flex;align-items:center;justify-content:center;
   padding:calc(24px + env(safe-area-inset-top,0px)) 24px calc(24px + env(safe-area-inset-bottom,0px))}
 .start-inner{max-width:400px}
 .start h1{font-size:clamp(2.4rem,11vw,3.4rem);font-weight:800;letter-spacing:-.04em;line-height:.95;margin:0 0 18px}
@@ -111,6 +111,14 @@ footer{padding:14px 18px 18px;display:grid;gap:14px}
 .primary{width:100%;font-size:1.1rem;font-weight:600;padding:16px;border:0;border-radius:18px;background:var(--ink);color:var(--bg)}
 .fine{color:var(--muted);font-size:.85rem;line-height:1.4;margin-top:14px}
 
+.secondary{width:100%;font-size:.95rem;padding:12px;margin-top:10px;border:1px solid var(--line);border-radius:18px;background:none}
+.ha-dialog{max-width:420px;width:calc(100% - 32px);border:0;border-radius:24px;padding:22px;background:var(--surface);color:var(--ink)}
+.ha-dialog::backdrop{background:rgba(0,0,0,.5)}
+.ha-form{display:grid;gap:12px}
+.ha-form h2{margin:0;font-size:1.3rem}
+.ha-form label{display:grid;gap:4px;font-size:.85rem;color:var(--muted)}
+.ha-form input{font:inherit;font-size:1rem;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:10px 12px;-webkit-user-select:text;user-select:text}
+.ha-actions{display:flex;gap:8px;justify-content:flex-end}
 @media (prefers-reduced-motion:reduce){
   .zone,.zone svg,.hint{transition:none}
   .zone.fire{animation:none}
@@ -175,11 +183,27 @@ footer{padding:14px 18px 18px;display:grid;gap:14px}
       <li><span>⇄</span><div><b>Ställ markören på en pil och skaka</b> telefonen för att byta låt.</div></li>
     </ul>
     <button class="primary" id="startBtn">Starta</button>
+    <button class="secondary" id="haBtn" type="button">Home Assistant</button>
     <p class="fine">Håll telefonen som du brukar när du trycker på Starta – det läget blir mitten. Musiken spelas här i webbläsaren och ljuset är simulerat. Utan gyro styr du med piltangenterna och trycker på Skaka.</p>
   </div>
 </div>
 
-<script>
+<dialog class="ha-dialog" id="haDialog" aria-labelledby="haTitle">
+  <form class="ha-form" id="haForm" method="dialog">
+    <h2 id="haTitle">Home Assistant</h2>
+    <label>Adress<input name="url" type="url" placeholder="http://homeassistant.local:8123" autocomplete="off"></label>
+    <label>Long-Lived Access Token<input name="token" type="password" autocomplete="off"></label>
+    <label>Ljus (light.…)<input name="light" type="text" placeholder="light.vardagsrum" autocomplete="off"></label>
+    <label>Mediaspelare (media_player.…)<input name="media" type="text" placeholder="media_player.vardagsrum" autocomplete="off"></label>
+    <div class="ha-actions">
+      <button class="ghost" type="button" id="haClear">Rensa</button>
+      <button class="ghost" type="button" id="haCancel">Avbryt</button>
+      <button class="ghost" type="submit" value="save">Spara</button>
+    </div>
+  </form>
+</dialog>
+<script type="module">
+import {createHa,loadSettings,saveSettings} from './ha.js';
 (function(){
   const tracks=[
     {t:"Kvällsdis",a:"Lågmält",ch:[220,277.18,329.63,415.3]},
@@ -194,6 +218,7 @@ footer{padding:14px 18px 18px;display:grid;gap:14px}
   const zPrev=$("zPrev"),zNext=$("zNext"),hint=$("hint");
   const clamp=v=>Math.min(1,Math.max(0,v));
 
+  let ha=createHa(loadSettings());
   let tx=.5,ty=.5,cx=.5,cy=.5;
   let vol=.5,light=.5,zone=0,idx=0;
   let b0=null,g0=null,gyro=false,lastShake=0,prevZ=null,hintTimer=null;
@@ -207,6 +232,9 @@ footer{padding:14px 18px 18px;display:grid;gap:14px}
     const tr=tracks[idx];
     $("title").textContent=tr.t;$("artist").textContent=tr.a;
     $("count").textContent=(idx+1)+" av "+tracks.length;
+  }
+  function renderSource(){
+    if(ha.hasMedia) showNowPlaying(); else renderTrack();
   }
 
   // ---------- Sensors ----------
@@ -237,12 +265,17 @@ footer{padding:14px 18px 18px;display:grid;gap:14px}
   }
   function changeTrack(dir){
     idx=(idx+dir+tracks.length)%tracks.length;
-    renderTrack();
+    if(!ha.hasMedia) renderTrack();
     const el=dir<0?zPrev:zNext;
     el.classList.remove("fire");void el.offsetWidth;el.classList.add("fire");
     if(navigator.vibrate) try{navigator.vibrate(30);}catch(_){}
     showHint(dir<0?"Föregående låt":"Nästa låt",1200);
-    if(ac) crossfadeTo(idx);
+    if(ha.hasMedia){
+      ha.changeTrack(dir).then(()=>setTimeout(showNowPlaying,1000)).catch(()=>showHint("Home Assistant svarar inte.",3000));
+    }else if(ac) crossfadeTo(idx);
+  }
+  function showNowPlaying(){
+    ha.nowPlaying().then(p=>{$("title").textContent=p.title;$("artist").textContent=p.artist;$("count").textContent="";}).catch(()=>{});
   }
 
   // ---------- Pointer / keyboard fallback ----------
@@ -341,7 +374,7 @@ footer{padding:14px 18px 18px;display:grid;gap:14px}
 
   $("startBtn").addEventListener("click",()=>{
     enableGyro();
-    startAudio();
+    if(!ha.hasMedia) startAudio();
     $("start").classList.add("hidden");
     pad.focus({preventScroll:true});
   });
@@ -367,10 +400,27 @@ footer{padding:14px 18px 18px;display:grid;gap:14px}
     $("vVol").textContent=vp+" %";$("bVol").style.width=vp+"%";
     $("vLight").textContent=lp+" %";$("bLight").style.width=lp+"%";
 
+    if(ha.hasLight) ha.setLight(light);
+    if(ha.hasMedia) ha.setVolume(vol);
     if(master) master.gain.setTargetAtTime(vol*vol*.7,ac.currentTime,.05);
     requestAnimationFrame(frame);
   }
-  renderTrack();
+  // ---------- Home Assistant settings ----------
+  const haDialog=$("haDialog"),haForm=$("haForm");
+  $("haBtn").addEventListener("click",()=>{
+    const s=loadSettings();
+    for(const name of ["url","token","light","media"]) haForm.elements[name].value=s[name]||"";
+    haDialog.showModal();
+  });
+  $("haCancel").addEventListener("click",()=>haDialog.close());
+  $("haClear").addEventListener("click",()=>{saveSettings({});ha=createHa({});renderSource();haDialog.close();});
+  haForm.addEventListener("submit",()=>{
+    const s={};
+    for(const name of ["url","token","light","media"]) s[name]=haForm.elements[name].value.trim();
+    saveSettings(s);ha=createHa(s);renderSource();
+  });
+
+  renderSource();
   requestAnimationFrame(frame);
 })();
 </script>
