@@ -175,7 +175,7 @@ footer{padding:14px 18px 18px;display:grid;gap:14px}
       <li><span>⇄</span><div><b>Ställ markören på en pil och skaka</b> telefonen för att byta låt.</div></li>
     </ul>
     <button class="primary" id="startBtn">Starta</button>
-    <p class="fine">Håll telefonen som du brukar när du trycker på Starta – det läget blir mitten. Musiken spelas här i webbläsaren och ljuset är simulerat. Utan gyro drar du i rutan och trycker på Skaka.</p>
+    <p class="fine">Håll telefonen som du brukar när du trycker på Starta – det läget blir mitten. Musiken spelas här i webbläsaren och ljuset är simulerat. Utan gyro styr du med piltangenterna och trycker på Skaka.</p>
   </div>
 </div>
 
@@ -246,15 +246,6 @@ footer{padding:14px 18px 18px;display:grid;gap:14px}
   }
 
   // ---------- Pointer / keyboard fallback ----------
-  let dragging=false;
-  function fromPointer(e){
-    const r=pad.getBoundingClientRect();
-    tx=clamp((e.clientX-r.left)/r.width);ty=clamp((e.clientY-r.top)/r.height);
-  }
-  pad.addEventListener("pointerdown",e=>{dragging=true;pad.setPointerCapture(e.pointerId);fromPointer(e);});
-  pad.addEventListener("pointermove",e=>{if(dragging)fromPointer(e);});
-  pad.addEventListener("pointerup",()=>dragging=false);
-  pad.addEventListener("pointercancel",()=>dragging=false);
   document.addEventListener("keydown",e=>{
     const s=.04;
     if(e.key==="ArrowLeft"){tx=clamp(tx-s);e.preventDefault();}
@@ -339,12 +330,12 @@ footer{padding:14px 18px 18px;display:grid;gap:14px}
   }
   function diagnose(state){
     if(!window.isSecureContext) return "Gyro kräver en säker anslutning (https). Öppna sidan via sin https-länk.";
-    if(!("DeviceOrientationEvent" in window)) return "Den här webbläsaren saknar stöd för gyro. Dra i rutan för att styra.";
+    if(!("DeviceOrientationEvent" in window)) return "Den här webbläsaren saknar stöd för gyro. Använd piltangenterna för att styra.";
     let embedded=false;
     try{embedded=window.self!==window.top;}catch(_){embedded=true;}
     if(embedded) return "Sidan visas inbäddad och får inte läsa sensorerna. Öppna länken direkt i Safari eller Chrome.";
     if(state==="error") return "Tillståndsfrågan kunde inte visas. Ladda om sidan och tryck på Slå på gyro igen.";
-    return "Inga sensordata kom fram. På Android: tillåt Rörelsesensorer i webbplatsinställningarna. På en dator finns inget gyro, så dra i rutan i stället.";
+    return "Inga sensordata kom fram. På Android: tillåt Rörelsesensorer i webbplatsinställningarna. På en dator finns inget gyro, så använd piltangenterna i stället.";
   }
   $("status").addEventListener("click",()=>{if(!gyro) enableGyro();});
 

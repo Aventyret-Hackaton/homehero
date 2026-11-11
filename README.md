@@ -19,7 +19,7 @@ caddy run
 Det finns inga automatiska tester. Testa manuellt i webbläsaren:
 
 1. Klicka på **Starta**.
-2. Dra i rutan för att styra volym (vänster–höger) och ljus (upp–ner).
+2. Använd piltangenterna för att styra volym (vänster–höger) och ljus (upp–ner).
 3. Placera markören på en pil och tryck på **Skaka** eller mellanslag för att byta låt.
 
 Testa gyro på en telefon:
