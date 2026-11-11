@@ -1,0 +1,5 @@
+:8080 {
+  root * .
+  encode gzip zstd
+  file_server
+}
