@@ -77,17 +77,17 @@ button:focus-visible{outline:2px solid #fff;outline-offset:3px}
   -webkit-text-stroke:.03em var(--edge);paint-order:stroke fill;
   /* --sx/--sy: extrusion direction and depth in em. On the stage the puck is the light source,
      so the script springs these away from the puck with a jelly wobble. */
-  --sx:.065;--sy:.065;
+  --sx:.045;--sy:.045;
   text-shadow:
     calc(var(--sx) * .2em) calc(var(--sy) * .2em) 0 var(--extrude),calc(var(--sx) * .4em) calc(var(--sy) * .4em) 0 var(--extrude),
     calc(var(--sx) * .6em) calc(var(--sy) * .6em) 0 var(--extrude),calc(var(--sx) * .8em) calc(var(--sy) * .8em) 0 var(--extrude),
-    calc(var(--sx) * 1em) calc(var(--sy) * 1em) 0 var(--edge),calc(var(--sx) * 1.5em) calc(var(--sy) * 1.5em) 0 rgba(0,0,0,.22)}
+    calc(var(--sx) * 1em) calc(var(--sy) * 1em) 0 var(--edge),calc(var(--sx) * 1.5em) calc(var(--sy) * 1.5em) 0 rgba(0,0,0,.15)}
 
 /* Glass pucks (user puck and track buttons share the recipe) */
 .glass{border-radius:50%;
   background:
     radial-gradient(circle at 34% 28%,rgba(255,255,255,var(--shine-a,.85)) 0 7%,rgba(255,255,255,0) 27%),
-    radial-gradient(circle at 50% 45%,hsl(var(--hue) 92% 50% / var(--fill-a,.72)) 0 55%,hsl(var(--hue) 88% 28% / var(--edge-a,.9)) 100%);
+    radial-gradient(circle at 50% 45%,hsl(var(--hue) var(--sat,92%) var(--lum,50%) / var(--fill-a,.72)) 0 55%,hsl(var(--hue) var(--sat,88%) var(--lum2,28%) / var(--edge-a,.9)) 100%);
   box-shadow:
     inset 0 -7px 12px hsl(var(--hue) 90% 16% / .55),
     inset 0 2px 3px rgba(255,255,255,.55),
@@ -131,6 +131,30 @@ button:focus-visible{outline:2px solid #fff;outline-offset:3px}
   border:3px solid hsl(212 100% 65%);box-shadow:0 0 18px hsl(212 100% 60% / .7);animation:burst .55s ease-out forwards}
 @keyframes burst{from{scale:.7;opacity:1}to{scale:2.8;opacity:0}}
 
+/* Bomb: black glass with an orange fuse glow, so it shows on black and on white */
+.target.bomb{--hue:24;--sat:12%;--lum:9%;--lum2:2%;--fill-a:.72;--edge-a:.92;--shine-a:.55;--glow-alpha:0}
+/* The button itself is the bomb; only a cap, a fuse and a spark stick out at the top right.
+   (4,20) in the icon sits on the button's edge at 45°. */
+.target.bomb .fuse-svg{position:absolute;left:75%;top:-35%;width:60%;height:60%;opacity:1;filter:none}
+.target.bomb .fuse-svg .cap{fill:#2b2b30;stroke:#55555c;stroke-width:1}
+.target.bomb .fuse-svg .fuse{fill:none;stroke:#c9a46c;stroke-width:1.8}
+.target.bomb .fuse-svg .spark{fill:#ffd23a;stroke:#ff8a1f;stroke-width:1.4;transform-origin:13.2px 10.6px;
+  filter:drop-shadow(0 0 3px #ff7a00);animation:spark .18s steps(2) infinite alternate}
+@keyframes spark{from{scale:.8;opacity:.75}to{scale:1.15;opacity:1}}
+.target.explode{animation:none;scale:2.6;opacity:0;transition:scale .22s ease-out,opacity .22s ease-out}
+
+.burst.fire{border-color:hsl(28 100% 58%);box-shadow:0 0 26px hsl(20 100% 55% / .8)}
+.boomflash{position:absolute;inset:0;pointer-events:none;z-index:2;opacity:0;
+  background:radial-gradient(circle at var(--bx) var(--by),#fff3c4 0,#ff9a1f 18%,rgba(255,80,0,.55) 40%,rgba(255,60,0,0) 70%);
+  animation:boomflash .7s ease-out forwards}
+@keyframes boomflash{0%{opacity:1}100%{opacity:0}}
+.boomtext{position:absolute;z-index:5;pointer-events:none;margin:0;transform:translate(-50%,-50%) rotate(-8deg);
+  font-family:"Sniglet",system-ui,sans-serif;font-weight:800;font-size:clamp(3rem,18vw,7rem);line-height:1;white-space:nowrap;
+  color:#ffd23a;text-shadow:.03em .03em 0 #e0621a,.06em .06em 0 #e0621a,.09em .09em 0 #b8380c,.15em .15em 0 rgba(0,0,0,.3);
+  animation:boomtext 1.1s cubic-bezier(.2,1.6,.4,1) forwards}
+@keyframes boomtext{0%{scale:.2;opacity:0}18%{scale:1.25;opacity:1}35%{scale:.95}50%{scale:1.05}75%{scale:1;opacity:1}100%{scale:1.1;opacity:0}}
+.stage.quaking{animation:quake .1s linear 6}
+
 .pill{font-size:.85rem;line-height:1.35;color:#fff;background:rgba(18,18,18,.6);border:1px solid rgba(255,255,255,.28);
   border-radius:999px;padding:8px 14px;-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}
 .status{position:absolute;z-index:6;top:calc(94px + env(safe-area-inset-top,0px));left:50%;transform:translateX(-50%);white-space:nowrap}
@@ -169,7 +193,9 @@ button:focus-visible{outline:2px solid #fff;outline-offset:3px}
   .target.pop{transition:none}
   .burst{display:none}
   .hint{transition:none}
-  .stage.alarm-on{animation:none}
+  .stage.alarm-on,.stage.quaking{animation:none}
+  .boomtext{animation-timing-function:linear}
+  .target.bomb .fuse-svg .spark{animation:none}
 }
 </style>
 </head>
@@ -188,6 +214,9 @@ button:focus-visible{outline:2px solid #fff;outline-offset:3px}
   <button class="target glass" id="tNext" type="button" aria-label="Nästa låt" tabindex="-1">
     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18.5 7v10"/><path d="M5.5 7.5 13.5 12l-8 4.5z"/></svg>
   </button>
+  <button class="target glass bomb" id="tBomb" type="button" aria-label="Bomb: slumpa en låt" tabindex="-1">
+    <svg class="fuse-svg" viewBox="0 0 24 24" aria-hidden="true"><path class="fuse" d="M4 20c2.5-2.5 2.6-4.6 5-5.6s3.2-1.6 3.6-3"/><rect class="cap" x="1" y="17.6" width="6" height="4.8" rx="1.4" transform="rotate(-45 4 20)"/><g class="spark"><circle cx="13.2" cy="10.6" r="2.2"/><path d="M13.2 6.6v1.6M17.2 10.6h-1.6M16 7.8l-1.1 1.1M10.4 7.8l1.1 1.1M16 13.4l-1.1-1.1"/></g></svg>
+  </button>
   <div class="puck" id="puck"><div class="glass" id="puckGlass"></div></div>
   <button class="pill status" id="status" type="button"><span id="statusText">Slå på gyro</span></button>
   <div class="pill hint" id="hint" role="status"></div>
@@ -202,6 +231,7 @@ button:focus-visible{outline:2px solid #fff;outline-offset:3px}
       <li><span>↔</span><div><b>Luta åt vänster eller höger</b> för att sänka eller höja volymen.</div></li>
       <li><span>↕</span><div><b>Luta framåt eller bakåt</b> för att göra rummet ljusare eller mörkare.</div></li>
       <li><span>●</span><div><b>Styr den gröna pucken in i en blå knapp</b> för att byta låt.</div></li>
+      <li><span>✸</span><div><b>Kör in i den svarta bomben</b> för en slumpad låt.</div></li>
       <li><span>≋</span><div><b>Skaka telefonen</b> för att komma tillbaka hit.</div></li>
     </ul>
     <button class="primary" id="startBtn" type="button">Starta</button>
@@ -244,7 +274,11 @@ import {createHa,loadSettings,saveSettings} from './ha.js';
   const $=id=>document.getElementById(id);
   const stage=$("stage"),lightEl=$("light"),tintEl=$("tint"),puck=$("puck"),puckGlass=$("puckGlass");
   const bgTitle=$("bgTitle"),measureEl=$("measure"),logo=$("logo"),hint=$("hint");
-  const targets=[{el:$("tPrev"),dir:-1,x:0,y:0,busy:false},{el:$("tNext"),dir:1,x:0,y:0,busy:false}];
+  const targets=[
+    {el:$("tPrev"),dir:-1,x:0,y:0,busy:false},
+    {el:$("tNext"),dir:1,x:0,y:0,busy:false},
+    {el:$("tBomb"),dir:0,bomb:true,x:0,y:0,busy:false}
+  ];
   const clamp=(v,lo=0,hi=1)=>Math.min(hi,Math.max(lo,v));
   const wait=ms=>new Promise(r=>setTimeout(r,ms));
   const motionQuery=matchMedia("(prefers-reduced-motion: reduce)");
@@ -264,7 +298,7 @@ import {createHa,loadSettings,saveSettings} from './ha.js';
     clearTimeout(hintTimer);hintTimer=setTimeout(()=>hint.classList.remove("show"),ms);
   }
 
-  let logoX=0,logoY=0,shX=.065,shY=.065,shVX=0,shVY=0; // logo centre and its springy shadow
+  let logoX=0,logoY=0,shX=.045,shY=.045,shVX=0,shVY=0; // logo centre and its springy shadow
   function measure(){
     const lr=logo.getBoundingClientRect();logoX=lr.left+lr.width/2;logoY=lr.top+lr.height/2;
     W=stage.clientWidth;H=stage.clientHeight;
@@ -331,7 +365,7 @@ import {createHa,loadSettings,saveSettings} from './ha.js';
 
   // ---------- Track buttons ----------
   function placeTarget(t){
-    const other=targets.find(o=>o!==t);
+    const others=targets.filter(o=>o!==t);
     const m=TS/2+16;
     const left=safe.l+m,right=W-safe.r-m,top=safe.t+m+44,bottom=H-safe.b-m;
     const lr=logo.getBoundingClientRect(),pad=TS/2+10;
@@ -342,19 +376,19 @@ import {createHa,loadSettings,saveSettings} from './ha.js';
       if(attempt%80===79) minD*=.8; // relax on cramped screens
       x=left+Math.random()*Math.max(0,right-left);
       y=top+Math.random()*Math.max(0,bottom-top);
-      ok=Math.hypot(x-px,y-py)>=minD&&Math.hypot(x-other.x,y-other.y)>=TS*2.2&&!inLogo(x,y);
+      ok=Math.hypot(x-px,y-py)>=minD&&others.every(o=>Math.hypot(x-o.x,y-o.y)>=TS*2.2)&&!inLogo(x,y);
     }
     if(!ok){x=px<W/2?right:left;y=py<H/2?bottom:top;}
     t.x=x;t.y=y;
     t.el.style.left=x+"px";t.el.style.top=y+"px";
-    t.el.style.setProperty("--jd",(Math.random()*1.6).toFixed(2)+"s"); // so the two buttons wobble out of step
+    t.el.style.setProperty("--jd",(Math.random()*1.6).toFixed(2)+"s"); // so the buttons wobble out of step
     t.el.style.animation="none";void t.el.offsetWidth;t.el.style.animation="";
   }
   function placeTargets(){targets.forEach(t=>{t.x=-1e4;t.y=-1e4;});targets.forEach(placeTarget);}
 
-  function burst(x,y){
+  function burst(x,y,variant){
     if(calm()) return;
-    const b=document.createElement("div");b.className="burst";
+    const b=document.createElement("div");b.className="burst"+(variant?" "+variant:"");
     b.style.left=x+"px";b.style.top=y+"px";
     b.addEventListener("animationend",()=>b.remove());
     stage.appendChild(b);
@@ -363,6 +397,7 @@ import {createHa,loadSettings,saveSettings} from './ha.js';
     const now=performance.now();
     if(t.busy||now-lastHit<350) return;
     lastHit=now;t.busy=true;
+    if(t.bomb){explode(t);return;}
     burst(t.x,t.y);
     hueTarget+=t.dir*HUE_STEP;
     wobV+=7;
@@ -377,8 +412,78 @@ import {createHa,loadSettings,saveSettings} from './ha.js';
       ha.changeTrack(dir).then(()=>setTimeout(showNowPlaying,1000)).catch(()=>showHint("Home Assistant svarar inte.",3000));
     }else{
       renderTrack();
-      if(ac) crossfadeTo(idx);
+      if(master) crossfadeTo(idx);
     }
+  }
+
+  // ---------- Bomb ----------
+  function explode(t){
+    const fx=!calm();
+    if(fx){
+      for(let i=0;i<3;i++) setTimeout(()=>burst(t.x,t.y,"fire"),i*90);
+      const flash=document.createElement("div");flash.className="boomflash";
+      flash.style.setProperty("--bx",t.x+"px");flash.style.setProperty("--by",t.y+"px");
+      flash.addEventListener("animationend",()=>flash.remove());
+      stage.appendChild(flash);
+      stage.classList.remove("quaking");void stage.offsetWidth;stage.classList.add("quaking");
+      setTimeout(()=>stage.classList.remove("quaking"),700);
+    }
+    const word=document.createElement("p");word.className="boomtext";word.textContent="BOOM!";
+    word.style.left=clamp(t.x,W*.3,W*.7)+"px";word.style.top=clamp(t.y,H*.2,H*.8)+"px";
+    word.addEventListener("animationend",()=>word.remove());
+    stage.appendChild(word);
+    if(!fx) setTimeout(()=>word.remove(),1100);
+    boomSound();
+    if(navigator.vibrate) try{navigator.vibrate([200,50,120]);}catch(_){}
+    // The blast throws the puck away and knocks its colour somewhere new
+    const dx=px-t.x,dy=py-t.y,d=Math.hypot(dx,dy)||1;
+    vx+=dx/d*1400;vy+=dy/d*1400;wobV+=12;
+    shVX+=(Math.random()-.5)*2.4;shVY+=(Math.random()-.5)*2.4;
+    hueTarget+=(Math.random()<.5?-1:1)*(70+Math.random()*120);
+    randomTrack();
+    t.el.classList.add("explode");
+    setTimeout(()=>{t.el.classList.remove("explode");placeTarget(t);t.busy=false;},fx?650:0);
+  }
+  function randomTrack(){
+    if(ha.hasMedia){
+      // Home Assistant has no "random track": skip ahead a random number of tracks instead.
+      const skips=1+Math.floor(Math.random()*4);
+      let chain=Promise.resolve();
+      for(let i=0;i<skips;i++) chain=chain.then(()=>ha.changeTrack(1));
+      chain.then(()=>setTimeout(showNowPlaying,1000)).catch(()=>showHint("Home Assistant svarar inte.",3000));
+      return;
+    }
+    let next=idx;
+    while(tracks.length>1&&next===idx) next=Math.floor(Math.random()*tracks.length);
+    idx=next;
+    renderTrack();
+    if(master) crossfadeTo(idx);
+  }
+  // Explosion at full volume: a falling sub-bass thump under a roar of noise that closes down.
+  function boomSound(){
+    if(!ac) return;
+    ac.resume().catch(()=>{});
+    const t=ac.currentTime,len=1.6;
+    const out=ac.createGain();out.gain.value=1;out.connect(ac.destination);
+
+    const thump=ac.createOscillator();thump.type="sine";
+    thump.frequency.setValueAtTime(110,t);thump.frequency.exponentialRampToValueAtTime(32,t+.6);
+    const tg=ac.createGain();tg.gain.setValueAtTime(1,t);tg.gain.exponentialRampToValueAtTime(.001,t+.8);
+    thump.connect(tg);tg.connect(out);thump.start(t);thump.stop(t+.8);
+
+    const roar=ac.createBufferSource();
+    const buf=ac.createBuffer(1,Math.ceil(ac.sampleRate*len),ac.sampleRate);
+    const d=buf.getChannelData(0);for(let i=0;i<d.length;i++) d[i]=Math.random()*2-1;
+    roar.buffer=buf;
+    const lp=ac.createBiquadFilter();lp.type="lowpass";
+    lp.frequency.setValueAtTime(4000,t);lp.frequency.exponentialRampToValueAtTime(90,t+1.2);
+    const crunch=ac.createWaveShaper();
+    const curve=new Float32Array(1024);
+    for(let i=0;i<curve.length;i++){const x=i/512-1;curve[i]=Math.tanh(3*x);}
+    crunch.curve=curve;
+    const rg=ac.createGain();rg.gain.setValueAtTime(1,t);rg.gain.exponentialRampToValueAtTime(.001,t+len);
+    roar.connect(lp);lp.connect(crunch);crunch.connect(rg);rg.connect(out);
+    roar.start(t);roar.stop(t+len);
   }
   targets.forEach(t=>t.el.addEventListener("click",()=>{if(running) hit(t);}));
 
@@ -677,7 +782,7 @@ import {createHa,loadSettings,saveSettings} from './ha.js';
 
     // Logo shadow: cast away from the puck (the light), lagging behind on a wobbly spring.
     let ax=logoX-px,ay=logoY-py;const ad=Math.hypot(ax,ay)||1;
-    const depth=.065*(1+Math.min(.8,speed/1500));
+    const depth=.045*(1+Math.min(.8,speed/1500));
     ax=ax/ad*depth;ay=ay/ad*depth;
     if(calm()){shX=ax;shY=ay;shVX=shVY=0;}
     else{

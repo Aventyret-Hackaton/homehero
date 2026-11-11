@@ -9,6 +9,7 @@ Statisk webbapp: [index.html](index.html), [ha.js](ha.js) och [manifest.webmanif
 - Den gröna pucken följer telefonens lutning över hela skärmen.
 - Åt sidan styr volymen och framåt/bakåt styr ljuset. Ljuset visas som en vit cirkel som växer ut från pucken; helt mörkt är skärmen svart.
 - Kör pucken in i en blå knapp för att byta låt. Knappen flyttas till en ny slumpad plats och puckens färg glider i spektrumet.
+- Kör in i den svarta bomben för en slumpad låt: BOOM! Med Home Assistant hoppar den i stället fram 1–4 låtar.
 - Låttiteln skrivs ut stort i bakgrunden.
 - Dubbeltryck på skärmen för att kalibrera om.
 - Skaka telefonen för att komma tillbaka till startskärmen. Rummet blir rött och ber dig sluta.
