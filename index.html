@@ -228,6 +228,7 @@ button:focus-visible{outline:2px solid #fff;outline-offset:3px}
 .ha-link{text-decoration:none;text-align:center;width:fit-content}
 .ha-link:not([href]){opacity:.5}
 .ha-status{margin:0;padding:10px 12px;border-radius:12px;background:#000;font-size:.9rem;line-height:1.4}
+.ha-code{white-space:pre-wrap;display:block;padding:8px 10px;border-radius:10px;background:#000;font-size:.85rem;word-break:break-all;-webkit-user-select:text;user-select:text}
 .ha-actions{display:flex;gap:8px;justify-content:flex-end}
 .ghost{font-size:.85rem;background:none;border:1px solid rgba(255,255,255,.28);border-radius:999px;padding:6px 12px}
 
@@ -293,6 +294,7 @@ button:focus-visible{outline:2px solid #fff;outline-offset:3px}
     <button class="primary" id="startBtn" type="button">Starta</button>
     <button class="secondary" id="haBtn" type="button">Home Assistant</button>
     <button class="secondary" id="hueBtn" type="button">Philips Hue</button>
+    <button class="secondary" id="spBtn" type="button">Spotify</button>
     <p class="fine">Håll telefonen som du brukar när du trycker på Starta – det läget blir mitten. Dubbeltryck på skärmen för att kalibrera om. Utan gyro styr du med piltangenterna.</p>
   </div>
 </div>
@@ -345,8 +347,52 @@ button:focus-visible{outline:2px solid #fff;outline-offset:3px}
     </div>
   </form>
 </dialog>
+<dialog class="ha-dialog" id="spDialog" aria-labelledby="spTitle">
+  <form class="ha-form" id="spForm" method="dialog">
+    <h2 id="spTitle">Spotify</h2>
+    <p class="fine">Spelar dina Gillade låtar på en Spotify-enhet, till exempel en högtalare. Kräver Spotify Premium.</p>
+    <ol class="ha-steps">
+      <li>
+        <b>Skapa en app hos Spotify.</b>
+        <span class="fine">Öppna developer.spotify.com/dashboard och välj Create app. Välj Web API. Skriv adressen nedan som Redirect URI och spara.</span>
+        <a class="ghost ha-link" href="https://developer.spotify.com/dashboard" target="_blank" rel="noopener">Öppna Spotify Developer</a>
+        <code class="ha-code" id="spRedirect"></code>
+        <span class="fine" id="spRedirectWarn"></span>
+      </li>
+      <li>
+        <b>Klistra in Client ID från appen.</b>
+        <input name="clientId" type="text" aria-label="Client ID" autocomplete="off">
+      </li>
+      <li>
+        <b>Logga in.</b>
+        <span class="fine">Du skickas till Spotify och tillbaka hit.</span>
+        <button class="ghost" type="button" id="spLogin">Logga in på Spotify</button>
+      </li>
+      <li>
+        <b>Välj enhet.</b>
+        <span class="fine">Välj Den här webbläsaren för att spela här, eller starta Spotify på en annan enhet så att den syns i listan.</span>
+        <select name="deviceId" id="spDevice" aria-label="Enhet"><option value="">Välj enhet</option></select>
+        <button class="ghost" type="button" id="spRefresh">Uppdatera listan</button>
+      </li>
+      <li>
+        <b>Testa uppspelning.</b>
+        <span class="fine">Startar musik på den valda enheten och visar vad Spotify svarar.</span>
+        <button class="ghost" type="button" id="spTest">Testa</button>
+        <code class="ha-code" id="spTestResult" aria-live="polite"></code>
+      </li>
+      <li><b>Tryck på Spara.</b></li>
+    </ol>
+    <p class="ha-status" id="spStatus" role="status" aria-live="polite">Börja med steg 1.</p>
+    <div class="ha-actions">
+      <button class="ghost" type="button" id="spClear">Rensa</button>
+      <button class="ghost" type="button" id="spCancel">Avbryt</button>
+      <button class="ghost" type="submit" value="save">Spara</button>
+    </div>
+  </form>
+</dialog>
 <script type="module">
 import {createHa,loadSettings,saveSettings} from './ha.js';
+import {createSpotify,loadSettings as loadSpotifySettings,saveSettings as saveSpotifySettings,login as spotifyLogin,completeLogin,listDevices,diagnose as diagnoseSpotify,BROWSER_DEVICE,redirectUri,isLoggedIn,clearAll as clearSpotify} from './spotify.js';
 import {createHue,loadSettings as loadHueSettings,saveSettings as saveHueSettings,pair} from './hue.js';
 import {fetchWeather,weatherIcon,weatherText,BUTTON_ICON,SAD_ICON} from './weather.js';
 (function(){
@@ -381,6 +427,10 @@ import {fetchWeather,weatherIcon,weatherText,BUTTON_ICON,SAD_ICON} from './weath
   const calm=()=>motionQuery.matches;
 
   let ha=createHa(loadSettings());
+  let spotify=createSpotify(loadSpotifySettings());
+  let media=spotify.hasMedia?spotify:ha; // Spotify first, then Home Assistant
+  let spotifyStarted=false;
+  const pickMedia=()=>{media=spotify.hasMedia?spotify:ha;};
   let bridge=createHue(loadHueSettings());
   let tx=.5,ty=.5;                    // where the tilt points, 0–1 on each axis
   let px=0,py=0,vx=0,vy=0;            // puck position and velocity in px
@@ -457,8 +507,8 @@ import {fetchWeather,weatherIcon,weatherText,BUTTON_ICON,SAD_ICON} from './weath
     bgTitle.appendChild(ch);
   }
   function renderTrack(){setTitle(tracks[idx].t,tracks[idx].a);}
-  function showNowPlaying(){ha.nowPlaying().then(p=>setTitle(p.title,p.artist)).catch(()=>{});}
-  function renderSource(){if(ha.hasMedia) showNowPlaying(); else renderTrack();}
+  function showNowPlaying(){media.nowPlaying().then(p=>setTitle(p.title,p.artist)).catch(()=>{});}
+  function renderSource(){if(media.hasMedia) showNowPlaying(); else renderTrack();}
 
   // ---------- Track buttons ----------
   function placeTarget(t){
@@ -513,8 +563,8 @@ import {fetchWeather,weatherIcon,weatherText,BUTTON_ICON,SAD_ICON} from './weath
   }
   function changeTrack(dir){
     idx=(idx+dir+tracks.length)%tracks.length;
-    if(ha.hasMedia){
-      ha.changeTrack(dir).then(()=>setTimeout(showNowPlaying,1000)).catch(()=>showHint("Home Assistant svarar inte.",3000));
+    if(media.hasMedia){
+      media.changeTrack(dir).then(()=>setTimeout(showNowPlaying,1000)).catch(err=>showHint("Musikkällan svarar inte. "+err.message,5000));
     }else{
       renderTrack();
       if(master) crossfadeTo(idx);
@@ -636,11 +686,11 @@ import {fetchWeather,weatherIcon,weatherText,BUTTON_ICON,SAD_ICON} from './weath
     setTimeout(()=>{t.el.classList.remove("explode");placeTarget(t);t.busy=false;},fx?650:0);
   }
   function randomTrack(){
-    if(ha.hasMedia){
+    if(media.hasMedia){
       // Home Assistant has no "random track": skip ahead a random number of tracks instead.
       const skips=1+Math.floor(Math.random()*4);
       let chain=Promise.resolve();
-      for(let i=0;i<skips;i++) chain=chain.then(()=>ha.changeTrack(1));
+      for(let i=0;i<skips;i++) chain=chain.then(()=>media.changeTrack(1));
       chain.then(()=>setTimeout(showNowPlaying,1000)).catch(()=>showHint("Home Assistant svarar inte.",3000));
       return;
     }
@@ -715,6 +765,7 @@ import {fetchWeather,weatherIcon,weatherText,BUTTON_ICON,SAD_ICON} from './weath
   function makeItStop(){
     if(!running||stopping) return;
     stopping=true;running=false;
+    if(media===spotify) spotify.pause().catch(()=>{});
     typeToken++;titleText=null; // cancel any ticker in progress
     bgTitle.classList.remove("fading");
     bgTitle.classList.add("stop");
@@ -871,7 +922,7 @@ import {fetchWeather,weatherIcon,weatherText,BUTTON_ICON,SAD_ICON} from './weath
     enableGyro().finally(()=>fetchWeather().catch(()=>{}));
     // The audio context must be unlocked by this tap, also when Home Assistant plays the music,
     // or the bomb stays silent.
-    if(!ha.hasMedia){if(master) ac.resume().catch(()=>{}); else startAudio();}
+    if(!media.hasMedia){if(master) ac.resume().catch(()=>{}); else startAudio();}
     else unlockAudio();
     $("start").classList.add("hidden");
     measure();
@@ -879,6 +930,11 @@ import {fetchWeather,weatherIcon,weatherText,BUTTON_ICON,SAD_ICON} from './weath
     b0=null;g0=null; // the way you hold the phone now becomes the middle
     placeTargets();
     loadLamps();
+    if(media===spotify){
+      (spotifyStarted?spotify.resume():spotify.start())
+        .then(()=>{spotifyStarted=true;setTimeout(showNowPlaying,1500);})
+        .catch(err=>showHint("Spotify: "+err.message,6000));
+    }
     running=true;
     keepAwake();
     stage.focus({preventScroll:true});
@@ -952,7 +1008,7 @@ import {fetchWeather,weatherIcon,weatherText,BUTTON_ICON,SAD_ICON} from './weath
     if(running){
       if(bridge.hasLight) bridge.setLight(light);
       else if(ha.hasLight) ha.setLight(light);
-      if(ha.hasMedia) ha.setVolume(vol);
+      if(media.hasMedia) media.setVolume(vol);
     }
     if(master) master.gain.setTargetAtTime(stopping?0:vol*vol*.7,ac.currentTime,.05);
     requestAnimationFrame(frame);
@@ -966,11 +1022,11 @@ import {fetchWeather,weatherIcon,weatherText,BUTTON_ICON,SAD_ICON} from './weath
     haDialog.showModal();
   });
   $("haCancel").addEventListener("click",()=>haDialog.close());
-  $("haClear").addEventListener("click",()=>{saveSettings({});ha=createHa({});renderSource();haDialog.close();});
+  $("haClear").addEventListener("click",()=>{saveSettings({});ha=createHa({});pickMedia();renderSource();haDialog.close();});
   haForm.addEventListener("submit",()=>{
     const st={};
     for(const name of ["url","token","light","media"]) st[name]=haForm.elements[name].value.trim();
-    saveSettings(st);ha=createHa(st);renderSource();
+    saveSettings(st);ha=createHa(st);pickMedia();renderSource();
   });
 
   // ---------- Philips Hue settings ----------
@@ -1021,6 +1077,59 @@ import {fetchWeather,weatherIcon,weatherText,BUTTON_ICON,SAD_ICON} from './weath
   $("hueCancel").addEventListener("click",()=>hueDialog.close());
   $("hueClear").addEventListener("click",()=>{saveHueSettings({});bridge=createHue({});hueDialog.close();});
   hueForm.addEventListener("submit",()=>{const s=hueFormSettings();saveHueSettings(s);bridge=createHue(s);});
+
+  // ---------- Spotify settings ----------
+  const spDialog=$("spDialog"),spForm=$("spForm"),spDevice=$("spDevice"),spStatus=$("spStatus");
+  function updateRedirect(){
+    $("spRedirect").textContent=redirectUri();
+    $("spRedirectWarn").textContent=location.hostname==="localhost"
+      ?"Spotify tillåter inte localhost. Öppna appen på http://127.0.0.1:8080 och använd den adressen här.":"";
+  }
+  async function fillDevices(selected){
+    if(!isLoggedIn()){spStatus.textContent="Inte inloggad än. Gör steg 3.";return;}
+    try{
+      const devices=await listDevices();
+      spDevice.replaceChildren(new Option("Välj enhet",""),new Option("Den här webbläsaren (spelar här)",BROWSER_DEVICE),...devices.filter(d=>d.name!=="Dumb Home").map(d=>new Option(d.name+(d.active?" (aktiv)":""),d.id)));
+      spDevice.value=selected||"";
+      spStatus.textContent=devices.length?"Inloggad. Välj enhet i steg 4 och tryck på Spara.":"Inloggad, men inga enheter hittades. Starta Spotify på enheten och tryck på Uppdatera listan.";
+    }catch(_){spStatus.textContent="Kunde inte hämta enheter från Spotify.";}
+  }
+  function openSpotifyDialog(){
+    const st=loadSpotifySettings();
+    spForm.elements.clientId.value=st.clientId||"";
+    spDevice.replaceChildren(new Option("Välj enhet",""));
+    updateRedirect();
+    spStatus.textContent=isLoggedIn()?"Hämtar enheter …":"Börja med steg 1.";
+    spDialog.showModal();
+    fillDevices(st.deviceId);
+  }
+  $("spBtn").addEventListener("click",openSpotifyDialog);
+  $("spLogin").addEventListener("click",()=>{
+    const clientId=spForm.elements.clientId.value.trim();
+    if(!clientId){spStatus.textContent="Klistra in Client ID i steg 2 först.";return;}
+    saveSpotifySettings({...loadSpotifySettings(),clientId});
+    spotifyLogin(clientId).catch(()=>{spStatus.textContent="Kunde inte starta inloggningen. Appen måste öppnas via https eller http://127.0.0.1.";});
+  });
+  $("spTest").addEventListener("click",async()=>{
+    const out=$("spTestResult");
+    out.textContent="Testar …";
+    out.textContent=await diagnoseSpotify({clientId:spForm.elements.clientId.value.trim(),deviceId:spDevice.value,
+      deviceName:spDevice.value?spDevice.selectedOptions[0].textContent.replace(" (aktiv)",""):""});
+  });
+  // Start the browser player as soon as it is chosen, so it is ready for the tap on Testa or Starta.
+  spDevice.addEventListener("change",()=>{
+    if(spDevice.value===BROWSER_DEVICE) createSpotify({clientId:spForm.elements.clientId.value.trim(),deviceId:BROWSER_DEVICE});
+  });
+  $("spRefresh").addEventListener("click",()=>fillDevices(spDevice.value));
+  $("spCancel").addEventListener("click",()=>spDialog.close());
+  $("spClear").addEventListener("click",()=>{clearSpotify();spotify=createSpotify({});spotifyStarted=false;pickMedia();renderSource();spDialog.close();});
+  spForm.addEventListener("submit",()=>{
+    const st={clientId:spForm.elements.clientId.value.trim(),deviceId:spDevice.value,
+      deviceName:spDevice.value?spDevice.selectedOptions[0].textContent.replace(" (aktiv)",""):""};
+    saveSpotifySettings(st);spotify=createSpotify(st);spotifyStarted=false;pickMedia();renderSource();
+  });
+  completeLogin().then(done=>{if(done) openSpotifyDialog();})
+    .catch(err=>{openSpotifyDialog();spStatus.textContent="Inloggningen misslyckades: "+err.message;});
 
   measure();px=W/2;py=H/2;
   renderSource();
