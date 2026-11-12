@@ -12,7 +12,7 @@
 <title>Dumb Home</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600&family=Sniglet:wght@800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600&family=Sniglet:wght@800&family=Barlow+Semi+Condensed:ital,wght@0,800;1,600&display=swap" rel="stylesheet">
 <style>
 :root{
   --ink:#f4f1ea; --muted:#a8a39b;
@@ -49,12 +49,20 @@ button:focus-visible{outline:2px solid #fff;outline-offset:3px}
 .bgtitle.stop{color:#d6001c;mix-blend-mode:normal;z-index:1}
 @keyframes quake{0%,100%{translate:0 0}25%{translate:-6px 3px}50%{translate:5px -4px}75%{translate:-3px -2px}}
 
-/* Song title: huge, tone-in-tone against black and white alike */
-.bgtitle{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:92vw;margin:0;
-  font-family:"Sniglet",system-ui,sans-serif;font-weight:800;line-height:.88;text-align:center;text-transform:uppercase;
-  overflow-wrap:anywhere;color:#1e1e1e;mix-blend-mode:difference;pointer-events:none;font-size:80px}
-.bgtitle.measure{visibility:hidden;mix-blend-mode:normal}
-.bgtitle.fading{opacity:0;transition:opacity .6s ease}
+/* Song title: huge, tone-in-tone against black and white alike, with the artist on one line above.
+   The wrapper centres without transform or z-index, so it makes no stacking context and the
+   difference blend still reaches the light behind it. */
+.nowplay{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none}
+.bgtitle{position:relative;width:92vw;margin:0;
+  font-family:"Barlow Semi Condensed",system-ui,sans-serif;font-weight:800;line-height:.95;letter-spacing:-.02em;text-align:center;text-transform:uppercase;
+  -webkit-hyphens:auto;hyphens:auto;overflow-wrap:break-word;color:#1e1e1e;mix-blend-mode:difference;pointer-events:none;font-size:80px}
+.bgtitle.measure{position:absolute;left:0;top:0;visibility:hidden;mix-blend-mode:normal}
+.bgtitle.fading,.bgartist.fading{opacity:0;transition:opacity .6s ease}
+.bgartist{width:92vw;margin:0 0 .9em;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;text-align:center;font-style:italic;
+  font-family:"Barlow Semi Condensed",system-ui,sans-serif;font-weight:600;letter-spacing:.01em;line-height:1.1;
+  color:#1e1e1e;mix-blend-mode:difference;font-size:24px;transition:opacity .6s ease}
+.bgartist:empty{display:none}
+.stage.alarm-on .bgartist{opacity:0}
 /* Each new character clicks into place like a ticker */
 .bgtitle .tick{display:inline-block;animation:tick .22s cubic-bezier(.2,1.8,.4,1) both}
 @keyframes tick{from{transform:translateY(-.18em) scaleY(.6);opacity:0}to{transform:none;opacity:1}}
@@ -120,7 +128,7 @@ button:focus-visible{outline:2px solid #fff;outline-offset:3px}
   /* Light on a dark room, dark on a lit one: --lit is how much light falls on this button */
   /* Fat round strokes over the fill make soft, puffy shapes. Opacity on the whole icon,
      not in the colour, so stroke and fill do not double up where they overlap. */
-  --icon:hsl(var(--hue) 90% calc(88% - var(--lit,0) * 78%));opacity:.5;stroke-width:4.5;stroke-linejoin:round;stroke-linecap:round;overflow:visible;
+  --icon:hsl(var(--hue) 90% calc(88% - var(--lit,0) * 78%));opacity:.72;stroke-width:4.5;stroke-linejoin:round;stroke-linecap:round;overflow:visible;
   filter:drop-shadow(0 1px 0 rgba(255,255,255,.35))}
 .target.pop{animation:none;scale:1.6;opacity:0;transition:scale .28s ease-out,opacity .28s ease-out}
 @keyframes spawn{0%{scale:0;opacity:0}45%{scale:1.22 .8;opacity:1}65%{scale:.9 1.1}82%{scale:1.05 .95}100%{scale:1;opacity:1}}
@@ -157,7 +165,6 @@ button:focus-visible{outline:2px solid #fff;outline-offset:3px}
 
 .pill{font-size:.85rem;line-height:1.35;color:#fff;background:rgba(18,18,18,.6);border:1px solid rgba(255,255,255,.28);
   border-radius:999px;padding:8px 14px;-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}
-.status{position:absolute;z-index:6;top:calc(94px + env(safe-area-inset-top,0px));left:50%;transform:translateX(-50%);white-space:nowrap}
 .hint{position:absolute;z-index:6;left:50%;bottom:calc(18px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);
   max-width:min(80vw,420px);width:max-content;text-align:center;border-radius:16px;opacity:0;transition:opacity .25s;pointer-events:none}
 .hint.show{opacity:1}
@@ -175,6 +182,8 @@ button:focus-visible{outline:2px solid #fff;outline-offset:3px}
   border-radius:999px;background:hsl(140 72% 46%);color:#06210f;box-shadow:0 6px 0 hsl(140 75% 24%);transition:transform .08s,box-shadow .08s}
 .primary:active{transform:translateY(4px);box-shadow:0 2px 0 hsl(140 75% 24%)}
 .secondary{width:100%;font-size:.95rem;padding:12px;margin-top:16px;border:1px solid rgba(255,255,255,.28);border-radius:999px;background:none}
+.gyro-msg{margin:0 0 12px;color:#ffb4a8;font-size:.95rem;line-height:1.45;text-align:left}
+.secondary.gyro{margin:0 0 16px}
 .fine{color:var(--muted);font-size:.85rem;line-height:1.45;margin-top:16px}
 
 /* ---------- Home Assistant dialog ---------- */
@@ -204,7 +213,10 @@ button:focus-visible{outline:2px solid #fff;outline-offset:3px}
 
 <div class="stage" id="stage" tabindex="0" aria-label="Styryta: luta åt sidan för volym, framåt eller bakåt för ljus. Styr pucken in i en blå knapp för att byta låt.">
   <div class="light" id="light"></div>
-  <p class="bgtitle" id="bgTitle" aria-hidden="true"></p>
+  <div class="nowplay">
+    <p class="bgartist" id="bgArtist" aria-hidden="true"></p>
+    <p class="bgtitle" id="bgTitle" aria-hidden="true"></p>
+  </div>
   <p class="bgtitle measure" id="measure" aria-hidden="true"></p>
   <div class="tint" id="tint"></div>
   <div class="logo" aria-hidden="true" id="logo"><span data-text="Dumb">Dumb</span><span data-text="Home">Home</span></div>
@@ -218,7 +230,6 @@ button:focus-visible{outline:2px solid #fff;outline-offset:3px}
     <svg class="fuse-svg" viewBox="0 0 24 24" aria-hidden="true"><path class="fuse" d="M4 20c2.5-2.5 2.6-4.6 5-5.6s3.2-1.6 3.6-3"/><rect class="cap" x="1" y="17.6" width="6" height="4.8" rx="1.4" transform="rotate(-45 4 20)"/><g class="spark"><circle cx="13.2" cy="10.6" r="2.2"/><path d="M13.2 6.6v1.6M17.2 10.6h-1.6M16 7.8l-1.1 1.1M10.4 7.8l1.1 1.1M16 13.4l-1.1-1.1"/></g></svg>
   </button>
   <div class="puck" id="puck"><div class="glass" id="puckGlass"></div></div>
-  <button class="pill status" id="status" type="button"><span id="statusText">Slå på gyro</span></button>
   <div class="pill hint" id="hint" role="status"></div>
   <div class="sr-only" id="nowPlaying" aria-live="polite"></div>
 </div>
@@ -234,6 +245,8 @@ button:focus-visible{outline:2px solid #fff;outline-offset:3px}
       <li><span>✸</span><div><b>Kör in i den svarta bomben</b> för en slumpad låt.</div></li>
       <li><span>≋</span><div><b>Skaka telefonen</b> för att komma tillbaka hit.</div></li>
     </ul>
+    <p class="gyro-msg hidden" id="gyroMsg" role="alert"></p>
+    <button class="secondary gyro hidden" id="gyroBtn" type="button">Slå på gyro</button>
     <button class="primary" id="startBtn" type="button">Starta</button>
     <button class="secondary" id="haBtn" type="button">Home Assistant</button>
     <p class="fine">Håll telefonen som du brukar när du trycker på Starta – det läget blir mitten. Dubbeltryck på skärmen för att kalibrera om. Utan gyro styr du med piltangenterna.</p>
@@ -273,7 +286,7 @@ import {createHa,loadSettings,saveSettings} from './ha.js';
 
   const $=id=>document.getElementById(id);
   const stage=$("stage"),lightEl=$("light"),tintEl=$("tint"),puck=$("puck"),puckGlass=$("puckGlass");
-  const bgTitle=$("bgTitle"),measureEl=$("measure"),logo=$("logo"),hint=$("hint");
+  const bgTitle=$("bgTitle"),bgArtist=$("bgArtist"),measureEl=$("measure"),logo=$("logo"),hint=$("hint");
   const targets=[
     {el:$("tPrev"),dir:-1,x:0,y:0,busy:false},
     {el:$("tNext"),dir:1,x:0,y:0,busy:false},
@@ -312,7 +325,7 @@ import {createHa,loadSettings,saveSettings} from './ha.js';
   function fitTitle(text){
     measureEl.textContent=text||" ";
     let lo=16,hi=Math.max(24,Math.min(W*.9,700));
-    const maxH=H*.62;
+    const maxH=H*.55; // leaves room for the artist line
     for(let i=0;i<14;i++){
       const mid=(lo+hi)/2;
       measureEl.style.fontSize=mid+"px";
@@ -327,21 +340,29 @@ import {createHa,loadSettings,saveSettings} from './ha.js';
     await document.fonts.ready;
     if(token!==typeToken) return;
     const size=fitTitle(text);
-    if(calm()){bgTitle.style.fontSize=size+"px";bgTitle.textContent=text;return;}
-    // Out: the old title simply fades away.
-    if(bgTitle.textContent){
-      bgTitle.classList.add("fading");
+    if(calm()){bgTitle.style.fontSize=size+"px";bgTitle.textContent=text;showArtist(artist,size);return;}
+    // Out: the old title and artist simply fade away.
+    if(bgTitle.textContent||bgArtist.textContent){
+      bgTitle.classList.add("fading");bgArtist.classList.add("fading");
       await wait(TICK_FADE_MS);if(token!==typeToken) return;
     }
-    bgTitle.textContent="";
+    bgTitle.textContent="";showArtist("",size);
     bgTitle.classList.remove("fading");
     await wait(TICK_PAUSE_MS);if(token!==typeToken) return;
     bgTitle.style.fontSize=size+"px";
+    showArtist(artist,size);bgArtist.classList.add("fading");void bgArtist.offsetWidth;bgArtist.classList.remove("fading");
     // In: one character per tick at a steady, mechanical pace.
     for(let i=1;i<=text.length;i++){
       showTicker(text.slice(0,i),text[i-1]!==" ");
       await wait(TICK_IN_MS);if(token!==typeToken) return;
     }
+  }
+  // One line, smaller than the title. If it does not fit, it ends in an ellipsis.
+  let artistText="";
+  function showArtist(artist,size){
+    artistText=artist||"";
+    bgArtist.style.fontSize=Math.round(Math.max(13,Math.min(size*.19,W*.047)))+"px";
+    bgArtist.textContent=artistText;
   }
   // Renders the text with the newest character in its own span so it can drop into place.
   function showTicker(text,tick){
@@ -350,14 +371,6 @@ import {createHa,loadSettings,saveSettings} from './ha.js';
     const ch=document.createElement("span");
     ch.className="tick";ch.textContent=text.slice(-1);
     bgTitle.appendChild(ch);
-    tickSound();
-  }
-  function tickSound(){
-    if(!ac||!master) return;
-    const t=ac.currentTime;
-    const o=ac.createOscillator();o.type="square";o.frequency.value=1900;
-    const e=ac.createGain();e.gain.setValueAtTime(.05,t);e.gain.exponentialRampToValueAtTime(.0001,t+.03);
-    o.connect(e);e.connect(master);o.start(t);o.stop(t+.035);
   }
   function renderTrack(){setTitle(tracks[idx].t,tracks[idx].a);}
   function showNowPlaying(){ha.nowPlaying().then(p=>setTitle(p.title,p.artist)).catch(()=>{});}
@@ -490,13 +503,17 @@ import {createHa,loadSettings,saveSettings} from './ha.js';
   // ---------- Sensors ----------
   function onOrient(e){
     if(e.beta==null||e.gamma==null) return;
-    if(!gyro){gyro=true;$("status").classList.add("hidden");showHint("Gyro på. Luta telefonen för att styra.",1600);}
+    if(!gyro){
+      gyro=true;
+      $("gyroMsg").classList.add("hidden");$("gyroBtn").classList.add("hidden");
+      if(running) showHint("Gyro på. Luta telefonen för att styra.",1600);
+    }
     if(b0===null){b0=e.beta;g0=e.gamma;}
     tx=clamp(.5+(e.gamma-g0)/(2*RANGE));
     ty=clamp(.5+(e.beta-b0)/(2*RANGE));
   }
   // ---------- Shake: back to the start screen ----------
-  const STOP_TEXT="Please make it stop!";
+  const STOP_TEXT="Välkommen åter";
   const SHAKE_FORCE=14;   // m/s² of movement (gravity excluded) that counts as a jolt
   const SHAKE_JOLTS=3;    // jolts needed within SHAKE_WINDOW_MS, so brisk tilting does not count
   const SHAKE_WINDOW_MS=900;
@@ -530,7 +547,6 @@ import {createHa,loadSettings,saveSettings} from './ha.js';
     hueTarget=Math.round(hue/360)*360; // nearest red, so the slide is short
     alarmOn=true;
     if(navigator.vibrate) try{navigator.vibrate([80,60,80,60,160]);}catch(_){}
-    scream();
     setTimeout(()=>{
       $("start").classList.remove("hidden");
       stage.classList.remove("alarm-on");
@@ -538,7 +554,7 @@ import {createHa,loadSettings,saveSettings} from './ha.js';
       hueTarget=hueBeforeAlarm;alarmOn=false;
       bgTitle.textContent="";
       stopping=false;
-      if(ac) ac.suspend().catch(()=>{}); // after the scream has finished
+      if(ac) ac.suspend().catch(()=>{});
       renderSource();
     },1800);
   }
@@ -551,7 +567,7 @@ import {createHa,loadSettings,saveSettings} from './ha.js';
   // Double tap anywhere on the stage recalibrates
   let lastTap=0,tapX=0,tapY=0;
   stage.addEventListener("pointerdown",e=>{
-    if(e.target.closest(".target,.status")) return;
+    if(e.target.closest(".target")) return;
     const now=performance.now();
     if(now-lastTap<320&&Math.hypot(e.clientX-tapX,e.clientY-tapY)<40){calibrate();lastTap=0;return;}
     lastTap=now;tapX=e.clientX;tapY=e.clientY;
@@ -586,60 +602,6 @@ import {createHa,loadSettings,saveSettings} from './ha.js';
       if(!ac) ac=new (window.AudioContext||window.webkitAudioContext)();
       else ac.resume().catch(()=>{});
     }catch(_){ac=null;}
-  }
-
-  // A synthesised scream at full volume, independent of the volume tilt.
-  // Two detuned sawtooth "vocal cords" with vibrato, distorted for rasp and shaped by
-  // vowel formants: either "AAAHHH" or "IIIHHH", picked at random.
-  const VOWELS={aah:[850,1250,2800],iih:[320,2400,3100]};
-  const SCREAM_S=.8;
-  function scream(){
-    if(!ac) return;
-    ac.resume().catch(()=>{});
-    const t=ac.currentTime,len=SCREAM_S;
-    const vowel=Math.random()<.5?VOWELS.aah:VOWELS.iih;
-    const out=ac.createGain();
-    out.gain.setValueAtTime(0,t);
-    out.gain.linearRampToValueAtTime(1,t+.02);
-    out.gain.setValueAtTime(1,t+len-.2);
-    out.gain.linearRampToValueAtTime(0,t+len);
-    out.connect(ac.destination);
-
-    const rasp=ac.createWaveShaper();
-    const curve=new Float32Array(1024);
-    for(let i=0;i<curve.length;i++){const x=i/512-1;curve[i]=Math.tanh(4*x);}
-    rasp.curve=curve;
-
-    vowel.forEach((f,k)=>{
-      const bp=ac.createBiquadFilter();bp.type="bandpass";bp.frequency.value=f;bp.Q.value=6;
-      const g=ac.createGain();g.gain.value=[1,.7,.35][k]*2.2;
-      rasp.connect(bp);bp.connect(g);g.connect(out);
-    });
-
-    const vib=ac.createOscillator();vib.frequency.value=7;
-    const vibDepth=ac.createGain();vibDepth.gain.value=35;
-    vib.connect(vibDepth);
-    [0,9].forEach(detune=>{
-      const o=ac.createOscillator();o.type="sawtooth";o.detune.value=detune;
-      o.frequency.setValueAtTime(620,t);
-      o.frequency.exponentialRampToValueAtTime(980,t+.1);  // the shriek goes up…
-      o.frequency.setValueAtTime(980,t+.45);
-      o.frequency.exponentialRampToValueAtTime(520,t+len); // …and cracks down
-      vibDepth.connect(o.frequency);
-      const g=ac.createGain();g.gain.value=.5;
-      o.connect(g);g.connect(rasp);
-      o.start(t);o.stop(t+len);
-    });
-
-    // Breath noise on top
-    const noise=ac.createBufferSource();
-    const buf=ac.createBuffer(1,Math.ceil(ac.sampleRate*len),ac.sampleRate);
-    const d=buf.getChannelData(0);for(let i=0;i<d.length;i++) d[i]=Math.random()*2-1;
-    noise.buffer=buf;
-    const nf=ac.createBiquadFilter();nf.type="bandpass";nf.frequency.value=3200;nf.Q.value=1.2;
-    const ng=ac.createGain();ng.gain.value=.25;
-    noise.connect(nf);nf.connect(ng);ng.connect(out);
-    vib.start(t);vib.stop(t+len);noise.start(t);noise.stop(t+len);
   }
 
   function crossfadeTo(i){
@@ -688,16 +650,23 @@ import {createHa,loadSettings,saveSettings} from './ha.js';
     }
     if(gyro) return;
     if(state==="denied"){
-      $("statusText").textContent="Tillstånd nekat";
-      showHint("Tillstånd nekades. Stäng fliken, öppna länken igen och välj Tillåt när frågan visas.",6000);
+      gyroFailed("Tillstånd nekades. Stäng fliken, öppna länken igen och välj Tillåt när frågan visas.");
       return;
     }
-    $("statusText").textContent="Väntar på gyro …";
-    setTimeout(()=>{
-      if(gyro) return;
-      $("statusText").textContent="Slå på gyro";
-      showHint(diagnose(state),6000);
-    },1500);
+    setTimeout(()=>{if(!gyro) gyroFailed(diagnose(state));},1500);
+  }
+  // A computer has no gyro, so there it is no failure: just steer with the arrow keys.
+  const touchDevice=matchMedia("(pointer: coarse)").matches;
+  function gyroFailed(message){
+    if(!touchDevice){if(running) showHint("Inget gyro här. Styr med piltangenterna.",3000);return;}
+    // On a phone: back to the start page, with the reason and a way to try again.
+    $("gyroMsg").textContent=message;
+    $("gyroMsg").classList.remove("hidden");$("gyroBtn").classList.remove("hidden");
+    if(running){
+      running=false;
+      if(ac) ac.suspend().catch(()=>{});
+      $("start").classList.remove("hidden");
+    }
   }
   function diagnose(state){
     if(!window.isSecureContext) return "Gyro kräver en säker anslutning (https). Öppna sidan via sin https-länk.";
@@ -708,7 +677,7 @@ import {createHa,loadSettings,saveSettings} from './ha.js';
     if(state==="error") return "Tillståndsfrågan kunde inte visas. Ladda om sidan och tryck på Slå på gyro igen.";
     return "Inga sensordata kom fram. På Android: tillåt Rörelsesensorer i webbplatsinställningarna. På en dator finns inget gyro, så använd piltangenterna i stället.";
   }
-  $("status").addEventListener("click",()=>{if(!gyro) enableGyro();});
+  $("gyroBtn").addEventListener("click",()=>{$("gyroMsg").textContent="Väntar på gyro …";enableGyro();});
 
   // ---------- Keep the screen awake ----------
   async function keepAwake(){
@@ -720,7 +689,7 @@ import {createHa,loadSettings,saveSettings} from './ha.js';
   $("startBtn").addEventListener("click",()=>{
     enableGyro();
     // The audio context must be unlocked by this tap, also when Home Assistant plays the music,
-    // or the scream on shake stays silent.
+    // or the bomb stays silent.
     if(!ha.hasMedia){if(master) ac.resume().catch(()=>{}); else startAudio();}
     else unlockAudio();
     $("start").classList.add("hidden");
@@ -735,7 +704,7 @@ import {createHa,loadSettings,saveSettings} from './ha.js';
 
   window.addEventListener("resize",()=>{
     measure();
-    if(titleText!==null) bgTitle.style.fontSize=fitTitle(titleText)+"px";
+    if(titleText!==null){const size=fitTitle(titleText);bgTitle.style.fontSize=size+"px";showArtist(artistText,size);}
     if(running) targets.forEach(t=>{if(t.x>W-TS/2||t.y>H-TS/2) placeTarget(t);});
   });
 

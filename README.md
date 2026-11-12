@@ -12,7 +12,7 @@ Statisk webbapp: [index.html](index.html), [ha.js](ha.js) och [manifest.webmanif
 - Kör in i den svarta bomben för en slumpad låt: BOOM! Med Home Assistant hoppar den i stället fram 1–4 låtar.
 - Låttiteln skrivs ut stort i bakgrunden.
 - Dubbeltryck på skärmen för att kalibrera om.
-- Skaka telefonen för att komma tillbaka till startskärmen. Rummet blir rött och ber dig sluta.
+- Skaka telefonen för att komma tillbaka till startskärmen. Rummet blir rött och säger VÄLKOMMEN ÅTER.
 - Lägg till sidan på hemskärmen för helskärm. Skärmen hålls tänd medan appen används.
 
 ## Home Assistant
