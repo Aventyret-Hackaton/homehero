@@ -139,6 +139,25 @@ button:focus-visible{outline:2px solid #fff;outline-offset:3px}
   border:3px solid hsl(212 100% 65%);box-shadow:0 0 18px hsl(212 100% 60% / .7);animation:burst .55s ease-out forwards}
 @keyframes burst{from{scale:.7;opacity:1}to{scale:2.8;opacity:0}}
 
+/* Weather button: yellow glass with an outline icon */
+.target.sky{--hue:44;--glow-alpha:.55}
+.target.sky svg{fill:none;stroke-width:2.2;width:56%;height:56%}
+
+/* Weather report: the song text fades out, a big weather icon and the description take its place.
+   Same tone-in-tone blend as the song title, and like it, no stacking context on the wrapper. */
+.wxshow{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none}
+.wxdesc{width:92vw;margin:0 0 .9em;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;text-align:center;
+  font-family:"Barlow Semi Condensed",system-ui,sans-serif;font-weight:600;font-style:italic;letter-spacing:.01em;line-height:1.1;
+  color:#1e1e1e;mix-blend-mode:difference;font-size:22px}
+.wxicon{width:min(77vw,50.6vh);height:min(77vw,50.6vh);fill:none;stroke:#1e1e1e;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;
+  overflow:visible;mix-blend-mode:difference}
+.wxdesc,.wxicon{opacity:0;transition:opacity .6s ease}
+.stage.wx-on .wxdesc,.stage.wx-on .wxicon{opacity:1}
+.wxshow .bgtitle{opacity:0}
+.stage.wx-on .wxshow .bgtitle{opacity:1}
+.bgtitle,.bgartist{transition:opacity .6s ease}
+.stage.wx-on .nowplay .bgtitle,.stage.wx-on .nowplay .bgartist{opacity:0}
+
 /* Bomb: black glass with an orange fuse glow, so it shows on black and on white */
 .target.lamp{--hue:48;--glow-alpha:.35}
 .target.lamp.selected{--fill-a:.85;--edge-a:1;--glow-alpha:.95}
@@ -232,6 +251,11 @@ button:focus-visible{outline:2px solid #fff;outline-offset:3px}
     <p class="bgartist" id="bgArtist" aria-hidden="true"></p>
     <p class="bgtitle" id="bgTitle" aria-hidden="true"></p>
   </div>
+  <div class="wxshow" aria-hidden="true">
+    <p class="wxdesc" id="wxDesc"></p>
+    <svg class="wxicon" id="wxIcon" viewBox="0 0 24 24"></svg>
+    <p class="bgtitle hidden" id="wxTitle"></p>
+  </div>
   <p class="bgtitle measure" id="measure" aria-hidden="true"></p>
   <div class="tint" id="tint"></div>
   <div class="logo" aria-hidden="true" id="logo"><span data-text="Dumb">Dumb</span><span data-text="Home">Home</span></div>
@@ -243,6 +267,9 @@ button:focus-visible{outline:2px solid #fff;outline-offset:3px}
   </button>
   <button class="target glass bomb" id="tBomb" type="button" aria-label="Bomb: slumpa en låt" tabindex="-1">
     <svg class="fuse-svg" viewBox="0 0 24 24" aria-hidden="true"><path class="fuse" d="M4 20c2.5-2.5 2.6-4.6 5-5.6s3.2-1.6 3.6-3"/><rect class="cap" x="1" y="17.6" width="6" height="4.8" rx="1.4" transform="rotate(-45 4 20)"/><g class="spark"><circle cx="13.2" cy="10.6" r="2.2"/><path d="M13.2 6.6v1.6M17.2 10.6h-1.6M16 7.8l-1.1 1.1M10.4 7.8l1.1 1.1M16 13.4l-1.1-1.1"/></g></svg>
+  </button>
+  <button class="target glass sky" id="tWeather" type="button" aria-label="Visa vädret där du är" tabindex="-1">
+    <svg viewBox="0 0 24 24" aria-hidden="true" id="wxBtnIcon"></svg>
   </button>
   <div class="puck" id="puck"><div class="glass" id="puckGlass"></div></div>
   <div class="pill hint" id="hint" role="status"></div>
@@ -258,6 +285,7 @@ button:focus-visible{outline:2px solid #fff;outline-offset:3px}
       <li><span>↕</span><div><b>Luta framåt eller bakåt</b> för att göra rummet ljusare eller mörkare.</div></li>
       <li><span>●</span><div><b>Styr den gröna pucken in i en blå knapp</b> för att byta låt.</div></li>
       <li><span>✸</span><div><b>Kör in i den svarta bomben</b> för en slumpad låt.</div></li>
+      <li><span>☁</span><div><b>Kör in i den gula väderknappen</b> för att se vädret där du är.</div></li>
       <li><span>≋</span><div><b>Skaka telefonen</b> för att komma tillbaka hit.</div></li>
     </ul>
     <p class="gyro-msg hidden" id="gyroMsg" role="alert"></p>
@@ -320,6 +348,7 @@ button:focus-visible{outline:2px solid #fff;outline-offset:3px}
 <script type="module">
 import {createHa,loadSettings,saveSettings} from './ha.js';
 import {createHue,loadSettings as loadHueSettings,saveSettings as saveHueSettings,pair} from './hue.js';
+import {fetchWeather,weatherIcon,weatherText,BUTTON_ICON,SAD_ICON} from './weather.js';
 (function(){
   const tracks=[
     {t:"Kvällsdis",a:"Lågmält",ch:[220,277.18,329.63,415.3]},
@@ -341,8 +370,11 @@ import {createHue,loadSettings as loadHueSettings,saveSettings as saveHueSetting
   const targets=[
     {el:$("tPrev"),dir:-1,x:0,y:0,busy:false},
     {el:$("tNext"),dir:1,x:0,y:0,busy:false},
-    {el:$("tBomb"),dir:0,bomb:true,x:0,y:0,busy:false}
+    {el:$("tBomb"),dir:0,bomb:true,x:0,y:0,busy:false},
+    {el:$("tWeather"),dir:0,weather:true,x:0,y:0,busy:false}
   ];
+  $("wxBtnIcon").innerHTML=BUTTON_ICON;
+  const WX_HOLD_MS=2600; // how long the weather stays up before the song comes back
   const clamp=(v,lo=0,hi=1)=>Math.min(hi,Math.max(lo,v));
   const wait=ms=>new Promise(r=>setTimeout(r,ms));
   const motionQuery=matchMedia("(prefers-reduced-motion: reduce)");
@@ -471,6 +503,7 @@ import {createHue,loadSettings as loadHueSettings,saveSettings as saveHueSetting
       return;
     }
     burst(t.x,t.y);
+    if(t.weather){t.el.classList.add("pop");showWeather(t);return;}
     hueTarget+=t.dir*HUE_STEP;
     wobV+=7;
     shVX+=(Math.random()-.5)*1.1;shVY+=(Math.random()-.5)*1.1; // the logo shadow jiggles too
@@ -530,6 +563,48 @@ import {createHue,loadSettings as loadHueSettings,saveSettings as saveHueSetting
     saveHueSettings(st);bridge=createHue(st);
     targets.forEach(o=>{if(o.lamp) o.el.classList.toggle("selected",o.id===t.id);});
     showHint("Lampa: "+t.name,2000);
+  }
+
+  // ---------- Weather ----------
+  // The button disappears; the song text fades out and the weather fades in in its place,
+  // stays a moment, fades out again, and then the button spawns somewhere new.
+  let wxToken=0;
+  async function showWeather(t){
+    const token=++wxToken;
+    // One time in four the button can't be bothered and tells you to look out of the window.
+    const lazy=Math.random()<.25;
+    let icon=null,text,title=null;
+    if(lazy){text="Aktuellt väder";title="Titta ut!";}
+    else{
+      const loading=setTimeout(()=>showHint("Hämtar vädret…",15000),400);
+      try{
+        const d=await fetchWeather();
+        icon=weatherIcon(d);text=weatherText(d);
+      }catch(e){
+        // Errors get the same treatment: a sad cloud where the title was, the reason on the artist line.
+        icon=SAD_ICON;
+        text=e&&e.code===1?"Tillåt platstjänster för att se vädret":"Kunde inte hämta vädret";
+      }
+      clearTimeout(loading);hint.classList.remove("show");
+    }
+    if(token===wxToken){ // not cancelled by a shake while fetching
+      const wxTitle=$("wxTitle"),wxIcon=$("wxIcon");
+      wxIcon.classList.toggle("hidden",!icon);
+      wxTitle.classList.toggle("hidden",!title);
+      if(icon) wxIcon.innerHTML=icon;
+      if(title){wxTitle.textContent=title;wxTitle.style.fontSize=fitTitle(title)+"px";}
+      $("wxDesc").textContent=text;
+      $("wxDesc").style.fontSize=bgArtist.style.fontSize||"22px";
+      $("nowPlaying").textContent=title?text+": "+title:icon===SAD_ICON?text:"Vädret: "+text;
+      stage.classList.add("wx-on");
+      await wait(600+WX_HOLD_MS);
+    }
+    if(token===wxToken){
+      stage.classList.remove("wx-on");
+      await wait(600);
+      renderSource(); // the screen-reader line goes back to the song
+    }
+    t.el.classList.remove("pop");placeTarget(t);t.busy=false;
   }
 
   // ---------- Bomb ----------
@@ -616,7 +691,7 @@ import {createHue,loadSettings as loadHueSettings,saveSettings as saveHueSetting
     ty=clamp(.5+(e.beta-b0)/(2*RANGE));
   }
   // ---------- Shake: back to the start screen ----------
-  const STOP_TEXT="Välkommen åter";
+  const STOP_TEXT="Hej då!";
   const SHAKE_FORCE=14;   // m/s² of movement (gravity excluded) that counts as a jolt
   const SHAKE_JOLTS=3;    // jolts needed within SHAKE_WINDOW_MS, so brisk tilting does not count
   const SHAKE_WINDOW_MS=900;
@@ -645,6 +720,7 @@ import {createHue,loadSettings as loadHueSettings,saveSettings as saveHueSetting
     bgTitle.classList.add("stop");
     bgTitle.style.fontSize=fitTitle(STOP_TEXT)+"px";
     bgTitle.textContent=STOP_TEXT;
+    wxToken++;stage.classList.remove("wx-on");
     stage.classList.add("alarm-on");
     hueBeforeAlarm=hueTarget;
     hueTarget=Math.round(hue/360)*360; // nearest red, so the slide is short
@@ -790,7 +866,9 @@ import {createHue,loadSettings as loadHueSettings,saveSettings as saveHueSetting
 
   // ---------- Start ----------
   $("startBtn").addEventListener("click",()=>{
-    enableGyro();
+    // All permissions are asked for on this tap: motion first (iOS needs it straight from the tap),
+    // then location for the weather, which is fetched in advance so the first report shows at once.
+    enableGyro().finally(()=>fetchWeather().catch(()=>{}));
     // The audio context must be unlocked by this tap, also when Home Assistant plays the music,
     // or the bomb stays silent.
     if(!ha.hasMedia){if(master) ac.resume().catch(()=>{}); else startAudio();}
