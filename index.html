@@ -3,121 +3,203 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>HomeHero</title>
+<meta name="theme-color" content="#000000">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Dumb Home">
+<link rel="manifest" href="manifest.webmanifest">
+<title>Dumb Home</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600&family=Sniglet:wght@800&family=Barlow+Semi+Condensed:ital,wght@0,800;1,600&display=swap" rel="stylesheet">
 <style>
 :root{
-  --bg:#ebe5da; --surface:#f6f1e8; --ink:#25233a; --muted:#6d6979;
-  --line:rgba(37,35,58,.14); --lamp:#ffaa3b; --zone:#2f7a72; --veil:#25233a;
-  color-scheme:light;
-  box-sizing:border-box;
-  padding-top:env(safe-area-inset-top,0px);
-  padding-bottom:env(safe-area-inset-bottom,0px);
-}
-@media (prefers-color-scheme:dark){
-  :root:not([data-theme="light"]){
-    --bg:#16152a; --surface:#211e38; --ink:#efe6d8; --muted:#9b96ad;
-    --line:rgba(239,230,216,.14); --lamp:#ffc46b; --zone:#7fd1c7; --veil:#0b0a18;
-    color-scheme:dark;
-  }
-}
-:root[data-theme="dark"]{
-  --bg:#16152a; --surface:#211e38; --ink:#efe6d8; --muted:#9b96ad;
-  --line:rgba(239,230,216,.14); --lamp:#ffc46b; --zone:#7fd1c7; --veil:#0b0a18;
+  --ink:#f4f1ea; --muted:#a8a39b;
+  --puck-size:clamp(56px,16vmin,84px);
+  --target-size:clamp(52px,14vmin,76px);
   color-scheme:dark;
 }
-*,*::before,*::after{box-sizing:inherit}
-html{height:100%;scroll-padding-top:env(safe-area-inset-top,0px)}
+*,*::before,*::after{box-sizing:border-box}
+html,body{height:100%;margin:0}
 body{
-  height:100%;margin:0;background:var(--bg);color:var(--ink);
+  background:#000;color:var(--ink);
   font-family:"Bricolage Grotesque",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
-  overflow:hidden;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent;
+  overflow:hidden;-webkit-user-select:none;user-select:none;
+  -webkit-tap-highlight-color:transparent;-webkit-touch-callout:none;
 }
-.app{height:100%;display:grid;grid-template-rows:auto 1fr auto;max-width:560px;margin:0 auto}
-
-header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 18px 10px}
-.brand{font-weight:800;font-size:1.3rem;letter-spacing:-.025em}
-.tools{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:8px;align-items:center}
-.status{font-size:.82rem;color:var(--muted);display:flex;gap:6px;align-items:center}
-.dot{width:8px;height:8px;border-radius:50%;background:var(--muted)}
-.status.on .dot{background:var(--zone)}
-.status:not(.on){color:var(--ink)}
-.status.on{cursor:default;border-color:transparent}
 button{font:inherit;color:inherit;cursor:pointer}
-.ghost{white-space:nowrap;font-size:.85rem;background:none;border:1px solid var(--line);border-radius:999px;padding:6px 12px}
-button:focus-visible{outline:2px solid var(--zone);outline-offset:2px}
+button:focus-visible{outline:2px solid #fff;outline-offset:3px}
 .hidden{display:none!important}
+.sr-only{position:absolute;width:1px;height:1px;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.safe-probe{position:fixed;visibility:hidden;pointer-events:none;
+  padding:env(safe-area-inset-top,0px) env(safe-area-inset-right,0px) env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px)}
 
-/* The room */
-.pad{position:relative;margin:0 12px;border-radius:30px;overflow:hidden;background:var(--surface);touch-action:none;min-height:0}
-.pad:focus-visible{outline:2px solid var(--zone);outline-offset:3px}
-.glow{position:absolute;inset:0;pointer-events:none;
-  background:radial-gradient(130% 75% at 50% -8%, var(--lamp) 0%, color-mix(in srgb,var(--lamp) 35%,transparent) 38%, transparent 72%)}
-.veil{position:absolute;inset:0;background:var(--veil);pointer-events:none}
-.vline,.hline{position:absolute;background:var(--ink);opacity:.18;pointer-events:none}
-.vline{top:0;bottom:0;width:1px}
-.hline{left:0;right:0;height:1px}
+/* ---------- Stage ---------- */
+.stage{position:fixed;inset:0;overflow:hidden;touch-action:none;isolation:isolate;background:#000}
+.stage:focus{outline:none}
+.light{position:absolute;inset:0;background:#000;pointer-events:none}
+/* The puck's colour tints the whole room a little, in the dark as well as in full light */
+.tint{position:absolute;inset:0;pointer-events:none;background:hsl(var(--hue,140) 85% 50%);opacity:.19}
+/* Shake = panic: the usual colour system slides to super red and the tint is turned way up */
+.tint{transition:opacity .3s}
+.stage.alarm-on .tint{opacity:.6;background:hsl(var(--hue,0) 100% 48%)}
+.stage.alarm-on{animation:quake .12s linear 8}
+/* The stop text is not tone-in-tone like song titles: clear, dark red, above the red tint */
+.bgtitle.stop{color:#d6001c;mix-blend-mode:normal;z-index:1}
+@keyframes quake{0%,100%{translate:0 0}25%{translate:-6px 3px}50%{translate:5px -4px}75%{translate:-3px -2px}}
 
-.zone{position:absolute;top:0;bottom:0;width:14%;display:flex;align-items:center;justify-content:center;
-  transition:background-color .2s}
-.zone.prev{left:0;border-right:1px dashed var(--line)}
-.zone.next{right:0;border-left:1px dashed var(--line)}
-.zone svg{width:30px;height:30px;fill:none;stroke:var(--ink);stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;opacity:.5;transition:opacity .2s,transform .2s}
-.zone.active{background:color-mix(in srgb,var(--zone) 20%,transparent)}
-.zone.active svg{stroke:var(--zone);opacity:1;transform:scale(1.15)}
-.zone.fire{animation:fire .45s ease-out}
-@keyframes fire{0%{background:color-mix(in srgb,var(--zone) 55%,transparent)}100%{background:color-mix(in srgb,var(--zone) 20%,transparent)}}
+/* Song title: huge, tone-in-tone against black and white alike, with the artist on one line above.
+   The wrapper centres without transform or z-index, so it makes no stacking context and the
+   difference blend still reaches the light behind it. */
+.nowplay{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none}
+.bgtitle{position:relative;width:92vw;margin:0;
+  font-family:"Barlow Semi Condensed",system-ui,sans-serif;font-weight:800;line-height:.95;letter-spacing:-.02em;text-align:center;text-transform:uppercase;
+  -webkit-hyphens:auto;hyphens:auto;overflow-wrap:break-word;color:#1e1e1e;mix-blend-mode:difference;pointer-events:none;font-size:80px}
+.bgtitle.measure{position:absolute;left:0;top:0;visibility:hidden;mix-blend-mode:normal}
+.bgtitle.fading,.bgartist.fading{opacity:0;transition:opacity .6s ease}
+.bgartist{width:92vw;margin:0 0 .9em;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;text-align:center;font-style:italic;
+  font-family:"Barlow Semi Condensed",system-ui,sans-serif;font-weight:600;letter-spacing:.01em;line-height:1.1;
+  color:#1e1e1e;mix-blend-mode:difference;font-size:24px;transition:opacity .6s ease}
+.bgartist:empty{display:none}
+.stage.alarm-on .bgartist{opacity:0}
+/* Each new character clicks into place like a ticker */
+.bgtitle .tick{display:inline-block;animation:tick .22s cubic-bezier(.2,1.8,.4,1) both}
+@keyframes tick{from{transform:translateY(-.18em) scaleY(.6);opacity:0}to{transform:none;opacity:1}}
 
-.cursor{position:absolute;width:46px;height:46px;margin:-23px 0 0 -23px;border-radius:50%;
-  border:2px solid var(--ink);background:color-mix(in srgb,var(--surface) 55%,transparent);
-  backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);pointer-events:none;
-  display:flex;align-items:center;justify-content:center}
-.cursor::after{content:"";width:8px;height:8px;border-radius:50%;background:var(--ink)}
-.cursor.armed{border-color:var(--zone)}
-.cursor.armed::after{background:var(--zone)}
+/* Logo with a goofy 3D extrusion */
+.logo span{display:block;position:relative}
+/* Glass on the letters, after the puck: a copy of each word on top, clipped to the glyphs,
+   with a bright reflection at the top and a darker inner edge at the bottom. */
+.logo span::after{content:attr(data-text);position:absolute;left:0;top:0;pointer-events:none;
+  -webkit-text-stroke:0;text-shadow:none;color:transparent;
+  background:
+    radial-gradient(120% 70% at 28% 8%,rgba(255,255,255,.75) 0,rgba(255,255,255,.18) 38%,rgba(255,255,255,0) 55%),
+    linear-gradient(to bottom,rgba(0,0,0,0) 50%,hsl(var(--hue) 85% 16% / .6) 100%);
+  -webkit-background-clip:text;background-clip:text}
+.logo{text-align:left;--hue:140;--face:hsl(var(--hue) 80% 52%);--extrude:hsl(var(--hue) 75% 26%);--edge:hsl(var(--hue) 70% 9%)}
+.logo span+span{margin-left:.5em;margin-top:-.22em}
+.logo{position:absolute;left:50%;top:calc(14px + env(safe-area-inset-top,0px));transform:translateX(-50%) rotate(-4deg);margin:0;pointer-events:none;z-index:2;
+  font-family:"Sniglet",system-ui,sans-serif;font-weight:800;font-size:clamp(1.6rem,7.5vw,2.3rem);line-height:1;
+  letter-spacing:.02em;white-space:nowrap;color:var(--face);
+  -webkit-text-stroke:.03em var(--edge);paint-order:stroke fill;
+  /* --sx/--sy: extrusion direction and depth in em. On the stage the puck is the light source,
+     so the script springs these away from the puck with a jelly wobble. */
+  --sx:.045;--sy:.045;
+  text-shadow:
+    calc(var(--sx) * .2em) calc(var(--sy) * .2em) 0 var(--extrude),calc(var(--sx) * .4em) calc(var(--sy) * .4em) 0 var(--extrude),
+    calc(var(--sx) * .6em) calc(var(--sy) * .6em) 0 var(--extrude),calc(var(--sx) * .8em) calc(var(--sy) * .8em) 0 var(--extrude),
+    calc(var(--sx) * 1em) calc(var(--sy) * 1em) 0 var(--edge),calc(var(--sx) * 1.5em) calc(var(--sy) * 1.5em) 0 rgba(0,0,0,.15)}
 
-.hint{position:absolute;left:50%;bottom:16px;transform:translateX(-50%);max-width:70%;text-align:center;
-  font-size:.85rem;line-height:1.35;color:var(--ink);background:color-mix(in srgb,var(--surface) 85%,transparent);
-  padding:8px 14px;border-radius:14px;opacity:0;transition:opacity .25s;pointer-events:none}
+/* Glass pucks (user puck and track buttons share the recipe) */
+.glass{border-radius:50%;
+  background:
+    radial-gradient(circle at 34% 28%,rgba(255,255,255,var(--shine-a,.85)) 0 7%,rgba(255,255,255,0) 27%),
+    radial-gradient(circle at 50% 45%,hsl(var(--hue) var(--sat,92%) var(--lum,50%) / var(--fill-a,.72)) 0 55%,hsl(var(--hue) var(--sat,88%) var(--lum2,28%) / var(--edge-a,.9)) 100%);
+  box-shadow:
+    inset 0 -7px 12px hsl(var(--hue) 90% 16% / .55),
+    inset 0 2px 3px rgba(255,255,255,.55),
+    0 0 0 1.5px rgba(255,255,255,.35),
+    0 0 var(--glow-blur,16px) var(--glow-spread,1px) hsl(var(--hue) 100% 60% / var(--glow-alpha,.35)),
+    var(--drop,0 10px 16px rgba(0,0,0,.3));
+  -webkit-backdrop-filter:blur(var(--blur,5px)) saturate(1.5);backdrop-filter:blur(var(--blur,5px)) saturate(1.5)}
+/* How much of the room's light falls on the puck: brightens it, never washes out the colour */
+.glass::after{content:"";position:absolute;inset:0;border-radius:50%;pointer-events:none;
+  background:radial-gradient(circle at 50% 40%,#fff 0,rgba(255,255,255,.55) 75%);
+  opacity:calc(var(--lit,0) * .25)}
+
+.puck{position:absolute;left:0;top:0;width:var(--puck-size);height:var(--puck-size);
+  margin:calc(var(--puck-size) / -2) 0 0 calc(var(--puck-size) / -2);
+  pointer-events:none;will-change:transform;z-index:4}
+.puck .glass{position:absolute;inset:0;--hue:140;
+  /* Flat like the buttons, but a little more solid so the puck stays the focus */
+  --fill-a:.58;--edge-a:.82;--blur:2px;--drop:0 0 0 transparent;
+  animation:pulse 1.8s ease-in-out infinite alternate}
+@keyframes pulse{from{scale:1}to{scale:1.045}}
+
+.target{position:absolute;left:0;top:0;width:var(--target-size);height:var(--target-size);
+  margin:calc(var(--target-size) / -2) 0 0 calc(var(--target-size) / -2);padding:0;border:0;z-index:3;
+  display:grid;place-items:center;
+  --hue:212;--glow-blur:24px;--glow-spread:6px;--glow-alpha:.6;
+  /* Flat against the surface and see-through, so the song title shows through */
+  --fill-a:.48;--edge-a:.78;--blur:1.5px;--drop:0 0 0 transparent;--shine-a:.4;
+  animation:spawn .6s ease-out both,jelly 2.2s ease-in-out calc(.6s + var(--jd,0s)) infinite}
+.target svg{position:relative;z-index:1;width:44%;height:44%;fill:var(--icon);stroke:var(--icon);
+  /* Light on a dark room, dark on a lit one: --lit is how much light falls on this button */
+  /* Fat round strokes over the fill make soft, puffy shapes. Opacity on the whole icon,
+     not in the colour, so stroke and fill do not double up where they overlap. */
+  --icon:hsl(var(--hue) 90% calc(88% - var(--lit,0) * 78%));opacity:.72;stroke-width:4.5;stroke-linejoin:round;stroke-linecap:round;overflow:visible;
+  filter:drop-shadow(0 1px 0 rgba(255,255,255,.35))}
+.target.pop{animation:none;scale:1.6;opacity:0;transition:scale .28s ease-out,opacity .28s ease-out}
+@keyframes spawn{0%{scale:0;opacity:0}45%{scale:1.22 .8;opacity:1}65%{scale:.9 1.1}82%{scale:1.05 .95}100%{scale:1;opacity:1}}
+@keyframes jelly{0%,100%{scale:1}25%{scale:1.08 .93}50%{scale:.95 1.06}75%{scale:1.03 .97}}
+
+.burst{position:absolute;width:var(--target-size);height:var(--target-size);
+  margin:calc(var(--target-size) / -2) 0 0 calc(var(--target-size) / -2);border-radius:50%;pointer-events:none;z-index:2;
+  border:3px solid hsl(212 100% 65%);box-shadow:0 0 18px hsl(212 100% 60% / .7);animation:burst .55s ease-out forwards}
+@keyframes burst{from{scale:.7;opacity:1}to{scale:2.8;opacity:0}}
+
+/* Bomb: black glass with an orange fuse glow, so it shows on black and on white */
+.target.lamp{--hue:48;--glow-alpha:.35}
+.target.lamp.selected{--fill-a:.85;--edge-a:1;--glow-alpha:.95}
+.target-name{position:absolute;top:100%;left:50%;translate:-50% 2px;max-width:9em;overflow:hidden;text-overflow:ellipsis;
+  white-space:nowrap;font-size:.7rem;color:var(--ink);text-shadow:0 0 4px #000,0 0 8px #000;pointer-events:none}
+.target.bomb{--hue:24;--sat:12%;--lum:9%;--lum2:2%;--fill-a:.72;--edge-a:.92;--shine-a:.55;--glow-alpha:0}
+/* The button itself is the bomb; only a cap, a fuse and a spark stick out at the top right.
+   (4,20) in the icon sits on the button's edge at 45°. */
+.target.bomb .fuse-svg{position:absolute;left:75%;top:-35%;width:60%;height:60%;opacity:1;filter:none}
+.target.bomb .fuse-svg .cap{fill:#2b2b30;stroke:#55555c;stroke-width:1}
+.target.bomb .fuse-svg .fuse{fill:none;stroke:#c9a46c;stroke-width:1.8}
+.target.bomb .fuse-svg .spark{fill:#ffd23a;stroke:#ff8a1f;stroke-width:1.4;transform-origin:13.2px 10.6px;
+  filter:drop-shadow(0 0 3px #ff7a00);animation:spark .18s steps(2) infinite alternate}
+@keyframes spark{from{scale:.8;opacity:.75}to{scale:1.15;opacity:1}}
+.target.explode{animation:none;scale:2.6;opacity:0;transition:scale .22s ease-out,opacity .22s ease-out}
+
+.burst.fire{border-color:hsl(28 100% 58%);box-shadow:0 0 26px hsl(20 100% 55% / .8)}
+.boomflash{position:absolute;inset:0;pointer-events:none;z-index:2;opacity:0;
+  background:radial-gradient(circle at var(--bx) var(--by),#fff3c4 0,#ff9a1f 18%,rgba(255,80,0,.55) 40%,rgba(255,60,0,0) 70%);
+  animation:boomflash .7s ease-out forwards}
+@keyframes boomflash{0%{opacity:1}100%{opacity:0}}
+.boomtext{position:absolute;z-index:5;pointer-events:none;margin:0;transform:translate(-50%,-50%) rotate(-8deg);
+  font-family:"Sniglet",system-ui,sans-serif;font-weight:800;font-size:clamp(3rem,18vw,7rem);line-height:1;white-space:nowrap;
+  color:#ffd23a;text-shadow:.03em .03em 0 #e0621a,.06em .06em 0 #e0621a,.09em .09em 0 #b8380c,.15em .15em 0 rgba(0,0,0,.3);
+  animation:boomtext 1.1s cubic-bezier(.2,1.6,.4,1) forwards}
+@keyframes boomtext{0%{scale:.2;opacity:0}18%{scale:1.25;opacity:1}35%{scale:.95}50%{scale:1.05}75%{scale:1;opacity:1}100%{scale:1.1;opacity:0}}
+.stage.quaking{animation:quake .1s linear 6}
+
+.pill{font-size:.85rem;line-height:1.35;color:#fff;background:rgba(18,18,18,.6);border:1px solid rgba(255,255,255,.28);
+  border-radius:999px;padding:8px 14px;-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}
+.hint{position:absolute;z-index:6;left:50%;bottom:calc(18px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);
+  max-width:min(80vw,420px);width:max-content;text-align:center;border-radius:16px;opacity:0;transition:opacity .25s;pointer-events:none}
 .hint.show{opacity:1}
 
-/* Now playing + readouts */
-footer{padding:14px 18px 18px;display:grid;gap:14px}
-.track{display:flex;align-items:baseline;justify-content:space-between;gap:12px}
-.title{font-size:1.45rem;font-weight:800;letter-spacing:-.02em;line-height:1.1}
-.artist{color:var(--muted);font-size:.95rem;margin-top:2px}
-.count{color:var(--muted);font-size:.85rem;white-space:nowrap}
-.readouts{display:grid;grid-template-columns:1fr 1fr;gap:18px}
-.readout .row{display:flex;justify-content:space-between;align-items:baseline}
-.readout .name{font-size:.9rem;color:var(--muted)}
-.readout .axis{font-size:.75rem;color:var(--muted)}
-.readout .val{font-size:2rem;font-weight:600;font-variant-numeric:tabular-nums;letter-spacing:-.02em;line-height:1.1}
-.bar{height:4px;border-radius:2px;background:var(--line);margin-top:6px;overflow:hidden}
-.bar i{display:block;height:100%;background:var(--ink)}
-.readout.light .bar i{background:var(--lamp)}
-.readout.frozen .val{color:var(--muted)}
-
-/* Start screen */
-.start{overflow-y:auto;position:fixed;inset:0;z-index:20;background:var(--bg);display:flex;align-items:center;justify-content:center;
+/* ---------- Start screen ---------- */
+.start{position:fixed;inset:0;z-index:20;background:#000;overflow-y:auto;display:flex;align-items:center;justify-content:center;
   padding:calc(24px + env(safe-area-inset-top,0px)) 24px calc(24px + env(safe-area-inset-bottom,0px))}
-.start-inner{max-width:400px}
-.start h1{font-size:clamp(2.4rem,11vw,3.4rem);font-weight:800;letter-spacing:-.04em;line-height:.95;margin:0 0 18px}
-.steps{margin:0 0 24px;padding:0;list-style:none;display:grid;gap:12px;font-size:1rem;line-height:1.45}
+.start-inner{max-width:400px;width:100%;text-align:center}
+.start .logo{position:relative;left:auto;top:auto;display:inline-block;transform:rotate(-4deg);margin:0 0 32px;font-size:clamp(2.4rem,12vw,4rem)}
+.steps{margin:0 0 28px;padding:0;list-style:none;display:grid;gap:12px;font-size:1rem;line-height:1.45;text-align:left}
 .steps li{display:grid;grid-template-columns:28px 1fr;gap:8px;align-items:start}
-.steps span{color:var(--muted)}
+.steps span{color:var(--muted);text-align:center}
 .steps b{font-weight:600}
-.primary{width:100%;font-size:1.1rem;font-weight:600;padding:16px;border:0;border-radius:18px;background:var(--ink);color:var(--bg)}
-.fine{color:var(--muted);font-size:.85rem;line-height:1.4;margin-top:14px}
+.primary{width:100%;font-family:"Sniglet",system-ui,sans-serif;font-weight:800;font-size:1.5rem;letter-spacing:.03em;padding:14px 16px;border:0;
+  border-radius:999px;background:hsl(140 72% 46%);color:#06210f;box-shadow:0 6px 0 hsl(140 75% 24%);transition:transform .08s,box-shadow .08s}
+.primary:active{transform:translateY(4px);box-shadow:0 2px 0 hsl(140 75% 24%)}
+.secondary{width:100%;font-size:.95rem;padding:12px;margin-top:16px;border:1px solid rgba(255,255,255,.28);border-radius:999px;background:none}
+.gyro-msg{margin:0 0 12px;color:#ffb4a8;font-size:.95rem;line-height:1.45;text-align:left}
+.secondary.gyro{margin:0 0 16px}
+.fine{color:var(--muted);font-size:.85rem;line-height:1.45;margin-top:16px}
 
-.secondary{width:100%;font-size:.95rem;padding:12px;margin-top:10px;border:1px solid var(--line);border-radius:18px;background:none}
-.ha-dialog{max-height:calc(100% - 32px);overflow-y:auto;max-width:420px;width:calc(100% - 32px);border:0;border-radius:24px;padding:22px;background:var(--surface);color:var(--ink)}
-.ha-dialog::backdrop{background:rgba(0,0,0,.5)}
+/* ---------- Home Assistant dialog ---------- */
+.ha-dialog{max-width:420px;width:calc(100% - 32px);border:1px solid rgba(255,255,255,.14);border-radius:24px;padding:22px;background:#151515;color:var(--ink)}
+.ha-dialog::backdrop{background:rgba(0,0,0,.6)}
 .ha-form{display:grid;gap:12px}
 .ha-form h2{margin:0;font-size:1.3rem}
 .ha-form label{display:grid;gap:4px;font-size:.85rem;color:var(--muted)}
-.ha-form input,.ha-form select{font:inherit;font-size:1rem;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:10px 12px;-webkit-user-select:text;user-select:text}
+.ha-form input{font:inherit;font-size:1rem;color:var(--ink);background:#000;border:1px solid rgba(255,255,255,.18);border-radius:12px;padding:10px 12px;
+  -webkit-user-select:text;user-select:text}
+.ha-form select{font:inherit;font-size:1rem;color:var(--ink);background:#000;border:1px solid rgba(255,255,255,.18);border-radius:12px;padding:10px 12px}
+.ha-dialog{max-height:calc(100% - 32px);overflow-y:auto}
 .ha-steps{margin:0;padding-left:20px;display:grid;gap:16px;font-size:.95rem;line-height:1.4}
 .ha-steps li{padding-left:4px}
 .ha-steps li>*{display:block;margin-top:6px}
@@ -126,76 +208,64 @@ footer{padding:14px 18px 18px;display:grid;gap:14px}
 .ha-steps .fine{margin-top:4px}
 .ha-link{text-decoration:none;text-align:center;width:fit-content}
 .ha-link:not([href]){opacity:.5}
-.ha-status{margin:0;padding:10px 12px;border-radius:12px;background:var(--bg);font-size:.9rem;line-height:1.4}
+.ha-status{margin:0;padding:10px 12px;border-radius:12px;background:#000;font-size:.9rem;line-height:1.4}
 .ha-actions{display:flex;gap:8px;justify-content:flex-end}
+.ghost{font-size:.85rem;background:none;border:1px solid rgba(255,255,255,.28);border-radius:999px;padding:6px 12px}
+
 @media (prefers-reduced-motion:reduce){
-  .zone,.zone svg,.hint{transition:none}
-  .zone.fire{animation:none}
+  .target,.puck .glass{animation:none}
+  .target.pop{transition:none}
+  .burst{display:none}
+  .hint{transition:none}
+  .stage.alarm-on,.stage.quaking{animation:none}
+  .boomtext{animation-timing-function:linear}
+  .target.bomb .fuse-svg .spark{animation:none}
 }
 </style>
 </head>
 <body>
-<div class="app">
-  <header>
-    <div class="brand">HomeHero</div>
-    <div class="tools">
-      <button class="ghost status" id="status" aria-live="polite"><span class="dot"></span><span id="statusText">Slå på gyro</span></button>
-      <button class="ghost hidden" id="shakeBtn" title="Mellanslag fungerar också">Skaka</button>
-      <button class="ghost" id="lightBtn">Lampa</button>
-      <button class="ghost" id="calBtn">Kalibrera</button>
-    </div>
-  </header>
+<div class="safe-probe" id="safeProbe" aria-hidden="true"></div>
 
-  <div class="pad" id="pad" tabindex="0" aria-label="Styryta: vänster–höger är volym, upp–ner är ljus">
-    <div class="glow" id="glow"></div>
-    <div class="veil" id="veil"></div>
-    <div class="vline" id="vline"></div>
-    <div class="hline" id="hline"></div>
-    <div class="zone prev" id="zPrev" aria-label="Föregående låt">
-      <svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg>
-    </div>
-    <div class="zone next" id="zNext" aria-label="Nästa låt">
-      <svg viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg>
-    </div>
-    <div class="cursor" id="cursor"></div>
-    <div class="hint" id="hint"></div>
+<div class="stage" id="stage" tabindex="0" aria-label="Styryta: luta åt sidan för volym, framåt eller bakåt för ljus. Styr pucken in i en blå knapp för att byta låt.">
+  <div class="light" id="light"></div>
+  <div class="nowplay">
+    <p class="bgartist" id="bgArtist" aria-hidden="true"></p>
+    <p class="bgtitle" id="bgTitle" aria-hidden="true"></p>
   </div>
-
-  <footer>
-    <div class="track">
-      <div>
-        <div class="title" id="title">–</div>
-        <div class="artist" id="artist">–</div>
-      </div>
-      <div class="count" id="count"></div>
-    </div>
-    <div class="readouts">
-      <div class="readout vol" id="rVol">
-        <div class="row"><span class="name">Volym</span><span class="axis">luta åt sidan</span></div>
-        <div class="val" id="vVol">0 %</div>
-        <div class="bar"><i id="bVol"></i></div>
-      </div>
-      <div class="readout light">
-        <div class="row"><span class="name">Ljus</span><span class="axis">luta framåt</span></div>
-        <div class="val" id="vLight">0 %</div>
-        <div class="bar"><i id="bLight"></i></div>
-      </div>
-    </div>
-  </footer>
+  <p class="bgtitle measure" id="measure" aria-hidden="true"></p>
+  <div class="tint" id="tint"></div>
+  <div class="logo" aria-hidden="true" id="logo"><span data-text="Dumb">Dumb</span><span data-text="Home">Home</span></div>
+  <button class="target glass" id="tPrev" type="button" aria-label="Föregående låt" tabindex="-1">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5.5 7v10"/><path d="M18.5 7.5 10.5 12l8 4.5z"/></svg>
+  </button>
+  <button class="target glass" id="tNext" type="button" aria-label="Nästa låt" tabindex="-1">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18.5 7v10"/><path d="M5.5 7.5 13.5 12l-8 4.5z"/></svg>
+  </button>
+  <button class="target glass bomb" id="tBomb" type="button" aria-label="Bomb: slumpa en låt" tabindex="-1">
+    <svg class="fuse-svg" viewBox="0 0 24 24" aria-hidden="true"><path class="fuse" d="M4 20c2.5-2.5 2.6-4.6 5-5.6s3.2-1.6 3.6-3"/><rect class="cap" x="1" y="17.6" width="6" height="4.8" rx="1.4" transform="rotate(-45 4 20)"/><g class="spark"><circle cx="13.2" cy="10.6" r="2.2"/><path d="M13.2 6.6v1.6M17.2 10.6h-1.6M16 7.8l-1.1 1.1M10.4 7.8l1.1 1.1M16 13.4l-1.1-1.1"/></g></svg>
+  </button>
+  <div class="puck" id="puck"><div class="glass" id="puckGlass"></div></div>
+  <div class="pill hint" id="hint" role="status"></div>
+  <div class="sr-only" id="nowPlaying" aria-live="polite"></div>
 </div>
 
 <div class="start" id="start">
   <div class="start-inner">
-    <h1>Luta för att styra rummet.</h1>
+    <div class="logo" aria-hidden="true"><span data-text="Dumb">Dumb</span><span data-text="Home">Home</span></div>
+    <h1 class="sr-only">Dumb Home</h1>
     <ul class="steps">
       <li><span>↔</span><div><b>Luta åt vänster eller höger</b> för att sänka eller höja volymen.</div></li>
       <li><span>↕</span><div><b>Luta framåt eller bakåt</b> för att göra rummet ljusare eller mörkare.</div></li>
-      <li><span>⇄</span><div><b>Ställ markören på en pil och skaka</b> telefonen för att byta låt.</div></li>
+      <li><span>●</span><div><b>Styr den gröna pucken in i en blå knapp</b> för att byta låt.</div></li>
+      <li><span>✸</span><div><b>Kör in i den svarta bomben</b> för en slumpad låt.</div></li>
+      <li><span>≋</span><div><b>Skaka telefonen</b> för att komma tillbaka hit.</div></li>
     </ul>
-    <button class="primary" id="startBtn">Starta</button>
+    <p class="gyro-msg hidden" id="gyroMsg" role="alert"></p>
+    <button class="secondary gyro hidden" id="gyroBtn" type="button">Slå på gyro</button>
+    <button class="primary" id="startBtn" type="button">Starta</button>
     <button class="secondary" id="haBtn" type="button">Home Assistant</button>
     <button class="secondary" id="hueBtn" type="button">Philips Hue</button>
-    <p class="fine">Håll telefonen som du brukar när du trycker på Starta – det läget blir mitten. Musiken spelas här i webbläsaren och ljuset är simulerat. Utan gyro styr du med piltangenterna och trycker på Skaka.</p>
+    <p class="fine">Håll telefonen som du brukar när du trycker på Starta – det läget blir mitten. Dubbeltryck på skärmen för att kalibrera om. Utan gyro styr du med piltangenterna.</p>
   </div>
 </div>
 
@@ -211,14 +281,6 @@ footer{padding:14px 18px 18px;display:grid;gap:14px}
       <button class="ghost" type="button" id="haCancel">Avbryt</button>
       <button class="ghost" type="submit" value="save">Spara</button>
     </div>
-  </form>
-</dialog>
-<dialog class="ha-dialog" id="lightDialog" aria-labelledby="lightTitle">
-  <form class="ha-form" method="dialog">
-    <h2 id="lightTitle">Välj lampa</h2>
-    <select id="lightSelect" aria-label="Lampa"><option value="">Välj lampa</option></select>
-    <p class="ha-status" id="lightStatus" role="status" aria-live="polite"></p>
-    <div class="ha-actions"><button class="ghost" type="submit">Stäng</button></div>
   </form>
 </dialog>
 <dialog class="ha-dialog" id="hueDialog" aria-labelledby="hueTitle">
@@ -265,105 +327,392 @@ import {createHue,loadSettings as loadHueSettings,saveSettings as saveHueSetting
     {t:"Långsam söndag",a:"Linnegård",ch:[174.61,220,261.63,329.63]},
     {t:"Sista bussen",a:"Nattlampan",ch:[164.81,207.65,246.94,311.13]}
   ];
-  const Z=0.14; // width of each arrow zone
-  const RANGE=25; // degrees of tilt from centre to edge
+  const RANGE=25;          // degrees of tilt from centre to edge
+  const START_HUE=140;     // green
+  const HUE_STEP=40;       // next shifts the puck's hue up, previous shifts it down
+  const SOFT_EDGE=.45;     // share of the light circle's radius that fades to black
+  const TICK_IN_MS=220;    // pace of the title ticker, per character
+  const TICK_FADE_MS=600;  // how long the old title takes to fade out
+  const TICK_PAUSE_MS=450; // blank moment between the old and the new title
+
   const $=id=>document.getElementById(id);
-  const pad=$("pad"),cursor=$("cursor"),glow=$("glow"),veil=$("veil"),vline=$("vline"),hline=$("hline");
-  const zPrev=$("zPrev"),zNext=$("zNext"),hint=$("hint");
-  const clamp=v=>Math.min(1,Math.max(0,v));
+  const stage=$("stage"),lightEl=$("light"),tintEl=$("tint"),puck=$("puck"),puckGlass=$("puckGlass");
+  const bgTitle=$("bgTitle"),bgArtist=$("bgArtist"),measureEl=$("measure"),logo=$("logo"),hint=$("hint");
+  const targets=[
+    {el:$("tPrev"),dir:-1,x:0,y:0,busy:false},
+    {el:$("tNext"),dir:1,x:0,y:0,busy:false},
+    {el:$("tBomb"),dir:0,bomb:true,x:0,y:0,busy:false}
+  ];
+  const clamp=(v,lo=0,hi=1)=>Math.min(hi,Math.max(lo,v));
+  const wait=ms=>new Promise(r=>setTimeout(r,ms));
+  const motionQuery=matchMedia("(prefers-reduced-motion: reduce)");
+  const calm=()=>motionQuery.matches;
 
   let ha=createHa(loadSettings());
-  let hue=createHue(loadHueSettings());
-  let tx=.5,ty=.5,cx=.5,cy=.5;
-  let vol=.5,light=.5,zone=0,idx=0;
-  let b0=null,g0=null,gyro=false,lastShake=0,prevZ=null,hintTimer=null;
+  let bridge=createHue(loadHueSettings());
+  let tx=.5,ty=.5;                    // where the tilt points, 0–1 on each axis
+  let px=0,py=0,vx=0,vy=0;            // puck position and velocity in px
+  let wob=0,wobV=0,wobAngle=0;        // jello deformation along the direction of travel
+  let hue=START_HUE,hueTarget=START_HUE;
+  let vol=.5,light=.5,idx=0,running=false,lastHit=0,lastFrame=0;
+  let b0=null,g0=null,gyro=false,hintTimer=null;
+  let W=0,H=0,PS=0,TS=0,safe={t:0,r:0,b:0,l:0};
 
   function showHint(text,ms=2200){
     hint.textContent=text;hint.classList.add("show");
     clearTimeout(hintTimer);hintTimer=setTimeout(()=>hint.classList.remove("show"),ms);
   }
 
-  function renderTrack(){
-    const tr=tracks[idx];
-    $("title").textContent=tr.t;$("artist").textContent=tr.a;
-    $("count").textContent=(idx+1)+" av "+tracks.length;
+  let logoX=0,logoY=0,shX=.045,shY=.045,shVX=0,shVY=0; // logo centre and its springy shadow
+  function measure(){
+    const lr=logo.getBoundingClientRect();logoX=lr.left+lr.width/2;logoY=lr.top+lr.height/2;
+    W=stage.clientWidth;H=stage.clientHeight;
+    PS=puck.offsetWidth;TS=targets[0].el.offsetWidth;
+    const cs=getComputedStyle($("safeProbe"));
+    safe={t:parseFloat(cs.paddingTop)||0,r:parseFloat(cs.paddingRight)||0,b:parseFloat(cs.paddingBottom)||0,l:parseFloat(cs.paddingLeft)||0};
   }
-  function renderSource(){
-    if(ha.hasMedia) showNowPlaying(); else renderTrack();
+
+  // ---------- Song title ----------
+  let titleText=null,typeToken=0;
+  function fitTitle(text){
+    measureEl.textContent=text||" ";
+    let lo=16,hi=Math.max(24,Math.min(W*.9,700));
+    const maxH=H*.55; // leaves room for the artist line
+    for(let i=0;i<14;i++){
+      const mid=(lo+hi)/2;
+      measureEl.style.fontSize=mid+"px";
+      if(measureEl.offsetHeight<=maxH) lo=mid; else hi=mid;
+    }
+    return lo;
   }
+  async function setTitle(text,artist){
+    $("nowPlaying").textContent="Nu spelas: "+text+(artist?" – "+artist:"");
+    if(text===titleText) return;
+    const token=++typeToken;titleText=text;
+    await document.fonts.ready;
+    if(token!==typeToken) return;
+    const size=fitTitle(text);
+    if(calm()){bgTitle.style.fontSize=size+"px";bgTitle.textContent=text;showArtist(artist,size);return;}
+    // Out: the old title and artist simply fade away.
+    if(bgTitle.textContent||bgArtist.textContent){
+      bgTitle.classList.add("fading");bgArtist.classList.add("fading");
+      await wait(TICK_FADE_MS);if(token!==typeToken) return;
+    }
+    bgTitle.textContent="";showArtist("",size);
+    bgTitle.classList.remove("fading");
+    await wait(TICK_PAUSE_MS);if(token!==typeToken) return;
+    bgTitle.style.fontSize=size+"px";
+    showArtist(artist,size);bgArtist.classList.add("fading");void bgArtist.offsetWidth;bgArtist.classList.remove("fading");
+    // In: one character per tick at a steady, mechanical pace.
+    for(let i=1;i<=text.length;i++){
+      showTicker(text.slice(0,i),text[i-1]!==" ");
+      await wait(TICK_IN_MS);if(token!==typeToken) return;
+    }
+  }
+  // One line, smaller than the title. If it does not fit, it ends in an ellipsis.
+  let artistText="";
+  function showArtist(artist,size){
+    artistText=artist||"";
+    bgArtist.style.fontSize=Math.round(Math.max(13,Math.min(size*.19,W*.047)))+"px";
+    bgArtist.textContent=artistText;
+  }
+  // Renders the text with the newest character in its own span so it can drop into place.
+  function showTicker(text,tick){
+    bgTitle.textContent=tick?text.slice(0,-1):text;
+    if(!tick) return;
+    const ch=document.createElement("span");
+    ch.className="tick";ch.textContent=text.slice(-1);
+    bgTitle.appendChild(ch);
+  }
+  function renderTrack(){setTitle(tracks[idx].t,tracks[idx].a);}
+  function showNowPlaying(){ha.nowPlaying().then(p=>setTitle(p.title,p.artist)).catch(()=>{});}
+  function renderSource(){if(ha.hasMedia) showNowPlaying(); else renderTrack();}
+
+  // ---------- Track buttons ----------
+  function placeTarget(t){
+    const others=targets.filter(o=>o!==t);
+    const m=TS/2+16;
+    const left=safe.l+m,right=W-safe.r-m,top=safe.t+m+44,bottom=H-safe.b-m;
+    const lr=logo.getBoundingClientRect(),pad=TS/2+10;
+    const inLogo=(x,y)=>x>lr.left-pad&&x<lr.right+pad&&y>lr.top-pad&&y<lr.bottom+pad;
+    let minD=Math.max(PS*2.2,Math.min(W,H)*.42);
+    let x=0,y=0,ok=false;
+    for(let attempt=0;attempt<400&&!ok;attempt++){
+      if(attempt%80===79) minD*=.8; // relax on cramped screens
+      x=left+Math.random()*Math.max(0,right-left);
+      y=top+Math.random()*Math.max(0,bottom-top);
+      ok=Math.hypot(x-px,y-py)>=minD&&others.every(o=>Math.hypot(x-o.x,y-o.y)>=TS*2.2)&&!inLogo(x,y);
+    }
+    if(!ok){x=px<W/2?right:left;y=py<H/2?bottom:top;}
+    t.x=x;t.y=y;
+    t.el.style.left=x+"px";t.el.style.top=y+"px";
+    t.el.style.setProperty("--jd",(Math.random()*1.6).toFixed(2)+"s"); // so the buttons wobble out of step
+    t.el.style.animation="none";void t.el.offsetWidth;t.el.style.animation="";
+  }
+  function placeTargets(){targets.forEach(t=>{t.x=-1e4;t.y=-1e4;});targets.forEach(placeTarget);}
+
+  function burst(x,y,variant){
+    if(calm()) return;
+    const b=document.createElement("div");b.className="burst"+(variant?" "+variant:"");
+    b.style.left=x+"px";b.style.top=y+"px";
+    b.addEventListener("animationend",()=>b.remove());
+    stage.appendChild(b);
+  }
+  function hit(t){
+    const now=performance.now();
+    if(t.busy||now-lastHit<350) return;
+    lastHit=now;t.busy=true;
+    if(t.bomb){explode(t);return;}
+    if(t.lamp){
+      burst(t.x,t.y);
+      selectLamp(t);
+      t.el.classList.add("pop");
+      setTimeout(()=>{t.el.classList.remove("pop");placeTarget(t);t.busy=false;},calm()?0:280);
+      return;
+    }
+    burst(t.x,t.y);
+    hueTarget+=t.dir*HUE_STEP;
+    wobV+=7;
+    shVX+=(Math.random()-.5)*1.1;shVY+=(Math.random()-.5)*1.1; // the logo shadow jiggles too
+    changeTrack(t.dir);
+    t.el.classList.add("pop");
+    setTimeout(()=>{t.el.classList.remove("pop");placeTarget(t);t.busy=false;},calm()?0:280);
+  }
+  function changeTrack(dir){
+    idx=(idx+dir+tracks.length)%tracks.length;
+    if(ha.hasMedia){
+      ha.changeTrack(dir).then(()=>setTimeout(showNowPlaying,1000)).catch(()=>showHint("Home Assistant svarar inte.",3000));
+    }else{
+      renderTrack();
+      if(master) crossfadeTo(idx);
+    }
+  }
+
+  // ---------- Lamp buttons (Philips Hue) ----------
+  const SVG_NS="http://www.w3.org/2000/svg";
+  function lampIcon(){
+    const svg=document.createElementNS(SVG_NS,"svg");
+    svg.setAttribute("viewBox","0 0 24 24");svg.setAttribute("aria-hidden","true");
+    const path=document.createElementNS(SVG_NS,"path");
+    path.setAttribute("d","M9 18.5h6M10.2 21h3.6M12 3.5a5.5 5.5 0 0 0-3.2 10c.7.5 1.2 1.2 1.2 2.2h4c0-1 .5-1.7 1.2-2.2A5.5 5.5 0 0 0 12 3.5z");
+    svg.appendChild(path);
+    return svg;
+  }
+  function clearLamps(){
+    for(let i=targets.length-1;i>=0;i--){
+      if(targets[i].lamp){targets[i].el.remove();targets.splice(i,1);}
+    }
+  }
+  async function loadLamps(){
+    clearLamps();
+    const st=loadHueSettings();
+    if(!st.bridge||!st.key) return;
+    try{
+      const lights=await createHue(st).listLights();
+      clearLamps();
+      for(const light of lights){
+        const el=document.createElement("button");
+        el.className="target glass lamp";el.type="button";el.tabIndex=-1;
+        el.setAttribute("aria-label","Välj lampa: "+light.name);
+        const label=document.createElement("span");label.className="target-name";label.textContent=light.name;
+        el.append(lampIcon(),label);
+        el.classList.toggle("selected",light.id===st.light);
+        stage.insertBefore(el,puck);
+        const t={el,lamp:true,id:light.id,name:light.name,x:0,y:0,busy:false};
+        el.addEventListener("click",()=>{if(running) hit(t);});
+        targets.push(t);
+        placeTarget(t);
+      }
+    }catch(_){showHint("Kunde inte hämta lampor från bryggan.",3000);}
+  }
+  function selectLamp(t){
+    const st={...loadHueSettings(),light:t.id};
+    saveHueSettings(st);bridge=createHue(st);
+    targets.forEach(o=>{if(o.lamp) o.el.classList.toggle("selected",o.id===t.id);});
+    showHint("Lampa: "+t.name,2000);
+  }
+
+  // ---------- Bomb ----------
+  function explode(t){
+    const fx=!calm();
+    if(fx){
+      for(let i=0;i<3;i++) setTimeout(()=>burst(t.x,t.y,"fire"),i*90);
+      const flash=document.createElement("div");flash.className="boomflash";
+      flash.style.setProperty("--bx",t.x+"px");flash.style.setProperty("--by",t.y+"px");
+      flash.addEventListener("animationend",()=>flash.remove());
+      stage.appendChild(flash);
+      stage.classList.remove("quaking");void stage.offsetWidth;stage.classList.add("quaking");
+      setTimeout(()=>stage.classList.remove("quaking"),700);
+    }
+    const word=document.createElement("p");word.className="boomtext";word.textContent="BOOM!";
+    word.style.left=clamp(t.x,W*.3,W*.7)+"px";word.style.top=clamp(t.y,H*.2,H*.8)+"px";
+    word.addEventListener("animationend",()=>word.remove());
+    stage.appendChild(word);
+    if(!fx) setTimeout(()=>word.remove(),1100);
+    boomSound();
+    if(navigator.vibrate) try{navigator.vibrate([200,50,120]);}catch(_){}
+    // The blast throws the puck away and knocks its colour somewhere new
+    const dx=px-t.x,dy=py-t.y,d=Math.hypot(dx,dy)||1;
+    vx+=dx/d*1400;vy+=dy/d*1400;wobV+=12;
+    shVX+=(Math.random()-.5)*2.4;shVY+=(Math.random()-.5)*2.4;
+    hueTarget+=(Math.random()<.5?-1:1)*(70+Math.random()*120);
+    randomTrack();
+    t.el.classList.add("explode");
+    setTimeout(()=>{t.el.classList.remove("explode");placeTarget(t);t.busy=false;},fx?650:0);
+  }
+  function randomTrack(){
+    if(ha.hasMedia){
+      // Home Assistant has no "random track": skip ahead a random number of tracks instead.
+      const skips=1+Math.floor(Math.random()*4);
+      let chain=Promise.resolve();
+      for(let i=0;i<skips;i++) chain=chain.then(()=>ha.changeTrack(1));
+      chain.then(()=>setTimeout(showNowPlaying,1000)).catch(()=>showHint("Home Assistant svarar inte.",3000));
+      return;
+    }
+    let next=idx;
+    while(tracks.length>1&&next===idx) next=Math.floor(Math.random()*tracks.length);
+    idx=next;
+    renderTrack();
+    if(master) crossfadeTo(idx);
+  }
+  // Explosion at full volume: a falling sub-bass thump under a roar of noise that closes down.
+  function boomSound(){
+    if(!ac) return;
+    ac.resume().catch(()=>{});
+    const t=ac.currentTime,len=1.6;
+    const out=ac.createGain();out.gain.value=1;out.connect(ac.destination);
+
+    const thump=ac.createOscillator();thump.type="sine";
+    thump.frequency.setValueAtTime(110,t);thump.frequency.exponentialRampToValueAtTime(32,t+.6);
+    const tg=ac.createGain();tg.gain.setValueAtTime(1,t);tg.gain.exponentialRampToValueAtTime(.001,t+.8);
+    thump.connect(tg);tg.connect(out);thump.start(t);thump.stop(t+.8);
+
+    const roar=ac.createBufferSource();
+    const buf=ac.createBuffer(1,Math.ceil(ac.sampleRate*len),ac.sampleRate);
+    const d=buf.getChannelData(0);for(let i=0;i<d.length;i++) d[i]=Math.random()*2-1;
+    roar.buffer=buf;
+    const lp=ac.createBiquadFilter();lp.type="lowpass";
+    lp.frequency.setValueAtTime(4000,t);lp.frequency.exponentialRampToValueAtTime(90,t+1.2);
+    const crunch=ac.createWaveShaper();
+    const curve=new Float32Array(1024);
+    for(let i=0;i<curve.length;i++){const x=i/512-1;curve[i]=Math.tanh(3*x);}
+    crunch.curve=curve;
+    const rg=ac.createGain();rg.gain.setValueAtTime(1,t);rg.gain.exponentialRampToValueAtTime(.001,t+len);
+    roar.connect(lp);lp.connect(crunch);crunch.connect(rg);rg.connect(out);
+    roar.start(t);roar.stop(t+len);
+  }
+  targets.forEach(t=>t.el.addEventListener("click",()=>{if(running) hit(t);}));
 
   // ---------- Sensors ----------
   function onOrient(e){
     if(e.beta==null||e.gamma==null) return;
-    if(!gyro){gyro=true;$("status").classList.add("on");$("status").disabled=true;$("statusText").textContent="Gyro på";$("shakeBtn").classList.add("hidden");showHint("Gyro på. Luta telefonen för att styra.",1600);}
+    if(!gyro){
+      gyro=true;
+      $("gyroMsg").classList.add("hidden");$("gyroBtn").classList.add("hidden");
+      if(running) showHint("Gyro på. Luta telefonen för att styra.",1600);
+    }
     if(b0===null){b0=e.beta;g0=e.gamma;}
     tx=clamp(.5+(e.gamma-g0)/(2*RANGE));
     ty=clamp(.5+(e.beta-b0)/(2*RANGE));
   }
+  // ---------- Shake: back to the start screen ----------
+  const STOP_TEXT="Välkommen åter";
+  const SHAKE_FORCE=14;   // m/s² of movement (gravity excluded) that counts as a jolt
+  const SHAKE_JOLTS=3;    // jolts needed within SHAKE_WINDOW_MS, so brisk tilting does not count
+  const SHAKE_WINDOW_MS=900;
+  let jolts=[],prevG=null,stopping=false,hueBeforeAlarm=START_HUE,alarmOn=false;
   function onMotion(e){
-    let z=null;
+    let force=null;
     const a=e.acceleration;
-    if(a&&a.z!=null){z=a.z;}
+    if(a&&a.x!=null){force=Math.hypot(a.x,a.y,a.z);}
     else{
       const g=e.accelerationIncludingGravity;
-      if(!g||g.z==null) return;
-      z=prevZ===null?0:g.z-prevZ; prevZ=g.z;
+      if(!g||g.x==null) return;
+      if(prevG) force=Math.hypot(g.x-prevG.x,g.y-prevG.y,g.z-prevG.z);
+      prevG={x:g.x,y:g.y,z:g.z};
     }
-    if(Math.abs(z)>13) shake();
-  }
-  function shake(){
+    if(force===null||force<SHAKE_FORCE) return;
     const now=performance.now();
-    if(now-lastShake<900) return;
-    lastShake=now;
-    if(zone===0){showHint("Ställ markören på en pil för att byta låt.");return;}
-    changeTrack(zone);
+    if(jolts.length&&now-jolts[jolts.length-1]<120) return; // one jolt per swing
+    jolts=jolts.filter(t=>now-t<SHAKE_WINDOW_MS);jolts.push(now);
+    if(jolts.length>=SHAKE_JOLTS){jolts=[];makeItStop();}
   }
-  function changeTrack(dir){
-    idx=(idx+dir+tracks.length)%tracks.length;
-    if(!ha.hasMedia) renderTrack();
-    const el=dir<0?zPrev:zNext;
-    el.classList.remove("fire");void el.offsetWidth;el.classList.add("fire");
-    if(navigator.vibrate) try{navigator.vibrate(30);}catch(_){}
-    showHint(dir<0?"Föregående låt":"Nästa låt",1200);
-    if(ha.hasMedia){
-      ha.changeTrack(dir).then(()=>setTimeout(showNowPlaying,1000)).catch(()=>showHint("Home Assistant svarar inte.",3000));
-    }else if(ac) crossfadeTo(idx);
-  }
-  function showNowPlaying(){
-    ha.nowPlaying().then(p=>{$("title").textContent=p.title;$("artist").textContent=p.artist;$("count").textContent="";}).catch(()=>{});
+  function makeItStop(){
+    if(!running||stopping) return;
+    stopping=true;running=false;
+    typeToken++;titleText=null; // cancel any ticker in progress
+    bgTitle.classList.remove("fading");
+    bgTitle.classList.add("stop");
+    bgTitle.style.fontSize=fitTitle(STOP_TEXT)+"px";
+    bgTitle.textContent=STOP_TEXT;
+    stage.classList.add("alarm-on");
+    hueBeforeAlarm=hueTarget;
+    hueTarget=Math.round(hue/360)*360; // nearest red, so the slide is short
+    alarmOn=true;
+    if(navigator.vibrate) try{navigator.vibrate([80,60,80,60,160]);}catch(_){}
+    setTimeout(()=>{
+      $("start").classList.remove("hidden");
+      stage.classList.remove("alarm-on");
+      bgTitle.classList.remove("stop");
+      hueTarget=hueBeforeAlarm;alarmOn=false;
+      bgTitle.textContent="";
+      stopping=false;
+      if(ac) ac.suspend().catch(()=>{});
+      renderSource();
+    },1800);
   }
 
-  // ---------- Pointer / keyboard fallback ----------
+  function calibrate(){
+    b0=null;g0=null;tx=.5;ty=.5;
+    showHint(gyro?"Kalibrerat. Nuvarande läge är mitten.":"Pucken är centrerad.",1600);
+  }
+
+  // Double tap anywhere on the stage recalibrates
+  let lastTap=0,tapX=0,tapY=0;
+  stage.addEventListener("pointerdown",e=>{
+    if(e.target.closest(".target")) return;
+    const now=performance.now();
+    if(now-lastTap<320&&Math.hypot(e.clientX-tapX,e.clientY-tapY)<40){calibrate();lastTap=0;return;}
+    lastTap=now;tapX=e.clientX;tapY=e.clientY;
+  });
+
+  // ---------- Keyboard fallback ----------
   document.addEventListener("keydown",e=>{
-    if(e.target.closest&&e.target.closest("dialog")) return;
+    if(!running) return;
     const s=.04;
     if(e.key==="ArrowLeft"){tx=clamp(tx-s);e.preventDefault();}
     else if(e.key==="ArrowRight"){tx=clamp(tx+s);e.preventDefault();}
     else if(e.key==="ArrowUp"){ty=clamp(ty-s);e.preventDefault();}
     else if(e.key==="ArrowDown"){ty=clamp(ty+s);e.preventDefault();}
-    else if(e.key===" "&&$("start").classList.contains("hidden")){shake();e.preventDefault();}
+    else if(e.key==="c"||e.key==="C"){calibrate();}
+    else if(e.key==="Escape"){makeItStop();}
   });
-  $("shakeBtn").addEventListener("click",()=>{lastShake=0;shake();});
-  $("calBtn").addEventListener("click",()=>{b0=null;g0=null;tx=.5;ty=.5;showHint(gyro?"Kalibrerat. Nuvarande läge är mitten.":"Markören är centrerad.",1600);});
 
   // ---------- Audio ----------
-  let ac=null,master=null,voice=null,arpTimer=null,step=0;
+  let ac=null,master=null,voice=null,step=0;
   function startAudio(){
     try{
-      ac=new (window.AudioContext||window.webkitAudioContext)();
+      ac=ac||new (window.AudioContext||window.webkitAudioContext)();
       master=ac.createGain();master.gain.value=0;
       const lp=ac.createBiquadFilter();lp.type="lowpass";lp.frequency.value=1800;
       master.connect(lp);lp.connect(ac.destination);
       crossfadeTo(idx);
-      arpTimer=setInterval(pluck,375);
+      setInterval(pluck,375);
     }catch(_){ac=null;}
   }
+  function unlockAudio(){
+    try{
+      if(!ac) ac=new (window.AudioContext||window.webkitAudioContext)();
+      else ac.resume().catch(()=>{});
+    }catch(_){ac=null;}
+  }
+
   function crossfadeTo(i){
     const t=ac.currentTime;
     const g=ac.createGain();g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(1,t+1.2);g.connect(master);
     const nodes=[];
     tracks[i].ch.slice(0,3).forEach((f,k)=>{
-      const o=ac.createOscillator();o.type=k===0?"triangle":"sine";o.frequency.value=f/ (k===0?2:1);o.detune.value=(k-1)*5;
+      const o=ac.createOscillator();o.type=k===0?"triangle":"sine";o.frequency.value=f/(k===0?2:1);o.detune.value=(k-1)*5;
       const og=ac.createGain();og.gain.value=.16;
       const lfo=ac.createOscillator();lfo.frequency.value=.12+k*.07;
       const lg=ac.createGain();lg.gain.value=.06;
@@ -387,7 +736,7 @@ import {createHue,loadSettings as loadHueSettings,saveSettings as saveHueSetting
     o.connect(e);e.connect(voice.g);o.start(t);o.stop(t+.65);
   }
 
-  // ---------- Start ----------
+  // ---------- Gyro permission ----------
   let listening=false;
   async function enableGyro(){
     let state="granted";
@@ -404,18 +753,23 @@ import {createHue,loadSettings as loadHueSettings,saveSettings as saveHueSetting
     }
     if(gyro) return;
     if(state==="denied"){
-      $("statusText").textContent="Tillstånd nekat";
-      $("shakeBtn").classList.remove("hidden");
-      showHint("Tillstånd nekades. Stäng fliken, öppna länken igen och välj Tillåt när frågan visas.",6000);
+      gyroFailed("Tillstånd nekades. Stäng fliken, öppna länken igen och välj Tillåt när frågan visas.");
       return;
     }
-    $("statusText").textContent="Väntar på gyro …";
-    setTimeout(()=>{
-      if(gyro) return;
-      $("statusText").textContent="Slå på gyro";
-      $("shakeBtn").classList.remove("hidden");
-      showHint(diagnose(state),6000);
-    },1500);
+    setTimeout(()=>{if(!gyro) gyroFailed(diagnose(state));},1500);
+  }
+  // A computer has no gyro, so there it is no failure: just steer with the arrow keys.
+  const touchDevice=matchMedia("(pointer: coarse)").matches;
+  function gyroFailed(message){
+    if(!touchDevice){if(running) showHint("Inget gyro här. Styr med piltangenterna.",3000);return;}
+    // On a phone: back to the start page, with the reason and a way to try again.
+    $("gyroMsg").textContent=message;
+    $("gyroMsg").classList.remove("hidden");$("gyroBtn").classList.remove("hidden");
+    if(running){
+      running=false;
+      if(ac) ac.suspend().catch(()=>{});
+      $("start").classList.remove("hidden");
+    }
   }
   function diagnose(state){
     if(!window.isSecureContext) return "Gyro kräver en säker anslutning (https). Öppna sidan via sin https-länk.";
@@ -426,55 +780,119 @@ import {createHue,loadSettings as loadHueSettings,saveSettings as saveHueSetting
     if(state==="error") return "Tillståndsfrågan kunde inte visas. Ladda om sidan och tryck på Slå på gyro igen.";
     return "Inga sensordata kom fram. På Android: tillåt Rörelsesensorer i webbplatsinställningarna. På en dator finns inget gyro, så använd piltangenterna i stället.";
   }
-  $("status").addEventListener("click",()=>{if(!gyro) enableGyro();});
+  $("gyroBtn").addEventListener("click",()=>{$("gyroMsg").textContent="Väntar på gyro …";enableGyro();});
 
+  // ---------- Keep the screen awake ----------
+  async function keepAwake(){
+    try{if("wakeLock" in navigator&&document.visibilityState==="visible") await navigator.wakeLock.request("screen");}catch(_){}
+  }
+  document.addEventListener("visibilitychange",()=>{if(running&&document.visibilityState==="visible") keepAwake();});
+
+  // ---------- Start ----------
   $("startBtn").addEventListener("click",()=>{
     enableGyro();
-    if(!ha.hasMedia) startAudio();
+    // The audio context must be unlocked by this tap, also when Home Assistant plays the music,
+    // or the bomb stays silent.
+    if(!ha.hasMedia){if(master) ac.resume().catch(()=>{}); else startAudio();}
+    else unlockAudio();
     $("start").classList.add("hidden");
-    pad.focus({preventScroll:true});
+    measure();
+    px=W/2;py=H/2;vx=vy=0;tx=ty=.5;
+    b0=null;g0=null; // the way you hold the phone now becomes the middle
+    placeTargets();
+    loadLamps();
+    running=true;
+    keepAwake();
+    stage.focus({preventScroll:true});
+  });
+
+  window.addEventListener("resize",()=>{
+    measure();
+    if(titleText!==null){const size=fitTitle(titleText);bgTitle.style.fontSize=size+"px";showArtist(artistText,size);}
+    if(running) targets.forEach(t=>{if(t.x>W-TS/2||t.y>H-TS/2) placeTarget(t);});
   });
 
   // ---------- Render loop ----------
-  function frame(){
-    cx+=(tx-cx)*.18;cy+=(ty-cy)*.18;
-    zone=cx<Z?-1:cx>1-Z?1:0;
-    if(zone===0) vol=clamp((cx-Z)/(1-2*Z)); // volume holds still while you rest on an arrow
-    light=clamp(1-cy);
+  function lightAt(x,y,radius){
+    if(radius<=0) return 0;
+    const d=Math.hypot(x-px,y-py),solid=radius*(1-SOFT_EDGE);
+    if(d<=solid) return 1;
+    if(d>=radius) return 0;
+    return 1-(d-solid)/(radius-solid);
+  }
+  function frame(now){
+    const dt=Math.min(.05,lastFrame?(now-lastFrame)/1000:0);lastFrame=now;
+    if(W===0) measure();
 
-    cursor.style.left=(cx*100)+"%";cursor.style.top=(cy*100)+"%";
-    vline.style.left=(cx*100)+"%";hline.style.top=(cy*100)+"%";
-    cursor.classList.toggle("armed",zone!==0);
-    zPrev.classList.toggle("active",zone===-1);
-    zNext.classList.toggle("active",zone===1);
-    $("rVol").classList.toggle("frozen",zone!==0);
+    // Spring the puck towards where the phone points; a little overshoot reads as jelly.
+    const gx=PS/2+tx*(W-PS),gy=PS/2+ty*(H-PS);
+    const k=calm()?400:130,c=calm()?40:2*Math.sqrt(130)*.5;
+    vx+=(k*(gx-px)-c*vx)*dt;vy+=(k*(gy-py)-c*vy)*dt;
+    px+=vx*dt;py+=vy*dt;
 
-    glow.style.opacity=(.05+.95*light).toFixed(3);
-    veil.style.opacity=((1-light)*.45).toFixed(3);
+    // Jello: stretch along the direction of travel, wobble back through a squash.
+    const speed=Math.hypot(vx,vy);
+    if(speed>40) wobAngle=Math.atan2(vy,vx);
+    const wobGoal=calm()?0:Math.min(.32,speed/1600);
+    wobV+=(300*(wobGoal-wob)-2*Math.sqrt(300)*.18*wobV)*dt;
+    wob+=wobV*dt;
+    const s=1+clamp(wob,-.3,.45);
+    puck.style.transform=`translate(${px}px,${py}px) rotate(${wobAngle}rad) scale(${s},${1/s}) rotate(${-wobAngle}rad)`;
 
-    const vp=Math.round(vol*100),lp=Math.round(light*100);
-    $("vVol").textContent=vp+" %";$("bVol").style.width=vp+"%";
-    $("vLight").textContent=lp+" %";$("bLight").style.width=lp+"%";
+    // Controls follow the puck, so what you see is what you set.
+    vol=clamp((px-PS/2)/Math.max(1,W-PS));
+    light=clamp(1-(py-PS/2)/Math.max(1,H-PS));
 
-    if(hue.hasLight) hue.setLight(light);
-    else if(ha.hasLight) ha.setLight(light);
-    if(ha.hasMedia) ha.setVolume(vol);
-    if(master) master.gain.setTargetAtTime(vol*vol*.7,ac.currentTime,.05);
+    // Light: a white circle grows from the puck until it fills the screen.
+    const far=Math.max(Math.hypot(px,py),Math.hypot(W-px,py),Math.hypot(px,H-py),Math.hypot(W-px,H-py));
+    const radius=light*far/(1-SOFT_EDGE);
+    lightEl.style.background=light<.005?"#000":`radial-gradient(circle at ${px}px ${py}px,#fff ${radius*(1-SOFT_EDGE)}px,#000 ${radius}px)`;
+
+    hue+=(hueTarget-hue)*Math.min(1,dt*(calm()||alarmOn?14:4)); // panic snaps to red fast
+    puckGlass.style.setProperty("--hue",hue.toFixed(1));
+    tintEl.style.setProperty("--hue",hue.toFixed(1));
+    logo.style.setProperty("--hue",hue.toFixed(1));
+
+    // Logo shadow: cast away from the puck (the light), lagging behind on a wobbly spring.
+    let ax=logoX-px,ay=logoY-py;const ad=Math.hypot(ax,ay)||1;
+    const depth=.045*(1+Math.min(.8,speed/1500));
+    ax=ax/ad*depth;ay=ay/ad*depth;
+    if(calm()){shX=ax;shY=ay;shVX=shVY=0;}
+    else{
+      const sk=70,sc=2*Math.sqrt(70)*.22;
+      shVX+=(sk*(ax-shX)-sc*shVX)*dt;shVY+=(sk*(ay-shY)-sc*shVY)*dt;
+      shX+=shVX*dt;shY+=shVY*dt;
+    }
+    logo.style.setProperty("--sx",shX.toFixed(4));
+    logo.style.setProperty("--sy",shY.toFixed(4));
+    puckGlass.style.setProperty("--lit",Math.sqrt(light).toFixed(3));
+    for(const t of targets){
+      t.el.style.setProperty("--lit",(lightAt(t.x,t.y,radius)*Math.sqrt(light)).toFixed(3));
+      if(running&&!t.busy&&Math.hypot(px-t.x,py-t.y)<(PS+TS)/2*.8) hit(t);
+    }
+
+    if(running){
+      if(bridge.hasLight) bridge.setLight(light);
+      else if(ha.hasLight) ha.setLight(light);
+      if(ha.hasMedia) ha.setVolume(vol);
+    }
+    if(master) master.gain.setTargetAtTime(stopping?0:vol*vol*.7,ac.currentTime,.05);
     requestAnimationFrame(frame);
   }
+
   // ---------- Home Assistant settings ----------
   const haDialog=$("haDialog"),haForm=$("haForm");
   $("haBtn").addEventListener("click",()=>{
-    const s=loadSettings();
-    for(const name of ["url","token","light","media"]) haForm.elements[name].value=s[name]||"";
+    const st=loadSettings();
+    for(const name of ["url","token","light","media"]) haForm.elements[name].value=st[name]||"";
     haDialog.showModal();
   });
   $("haCancel").addEventListener("click",()=>haDialog.close());
   $("haClear").addEventListener("click",()=>{saveSettings({});ha=createHa({});renderSource();haDialog.close();});
   haForm.addEventListener("submit",()=>{
-    const s={};
-    for(const name of ["url","token","light","media"]) s[name]=haForm.elements[name].value.trim();
-    saveSettings(s);ha=createHa(s);renderSource();
+    const st={};
+    for(const name of ["url","token","light","media"]) st[name]=haForm.elements[name].value.trim();
+    saveSettings(st);ha=createHa(st);renderSource();
   });
 
   // ---------- Philips Hue settings ----------
@@ -523,34 +941,10 @@ import {createHue,loadSettings as loadHueSettings,saveSettings as saveHueSetting
     }
   });
   $("hueCancel").addEventListener("click",()=>hueDialog.close());
-  $("hueClear").addEventListener("click",()=>{saveHueSettings({});hue=createHue({});hueDialog.close();});
-  hueForm.addEventListener("submit",()=>{const s=hueFormSettings();saveHueSettings(s);hue=createHue(s);});
+  $("hueClear").addEventListener("click",()=>{saveHueSettings({});bridge=createHue({});hueDialog.close();});
+  hueForm.addEventListener("submit",()=>{const s=hueFormSettings();saveHueSettings(s);bridge=createHue(s);});
 
-  // ---------- Pick light while running ----------
-  const lightDialog=$("lightDialog"),lightSelect=$("lightSelect"),lightStatus=$("lightStatus");
-  $("lightBtn").addEventListener("click",async()=>{
-    const s=loadHueSettings();
-    if(!s.bridge||!s.key){showHint("Koppla Philips Hue först. Du hittar knappen på startskärmen efter en omladdning.",4000);return;}
-    lightStatus.textContent="Hämtar lampor …";
-    lightSelect.replaceChildren(new Option("Välj lampa",""));
-    lightDialog.showModal();
-    try{
-      const lights=await createHue(s).listLights();
-      lightSelect.replaceChildren(new Option("Välj lampa",""),...lights.map(l=>new Option(l.name,l.id)));
-      lightSelect.value=s.light||"";
-      lightStatus.textContent=lights.length?"":"Inga lampor hittades.";
-    }catch(_){
-      lightStatus.textContent="Kunde inte nå bryggan.";
-    }
-  });
-  lightSelect.addEventListener("change",()=>{
-    if(!lightSelect.value) return;
-    const s={...loadHueSettings(),light:lightSelect.value};
-    saveHueSettings(s);hue=createHue(s);
-    lightDialog.close();
-    showHint("Lampa vald: "+lightSelect.selectedOptions[0].textContent,2000);
-  });
-
+  measure();px=W/2;py=H/2;
   renderSource();
   requestAnimationFrame(frame);
 })();

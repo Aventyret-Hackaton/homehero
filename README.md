@@ -1,8 +1,8 @@
-# HomeHero
+# Dumb Home
 
-Webbapp som styr volym, ljus och låtbyte genom att luta och skaka telefonen. Musiken spelas i webbläsaren och ljuset är simulerat tills du kopplar in Home Assistant eller Philips Hue.
+Webbapp som styr volym, ljus och låtbyte genom att luta telefonen. Musiken spelas i webbläsaren och ljuset är simulerat tills du kopplar in Home Assistant eller Philips Hue.
 
-Statisk webbapp: [index.html](index.html), [ha.js](ha.js) och [hue.js](hue.js).
+Statisk webbapp: [index.html](index.html), [ha.js](ha.js), [hue.js](hue.js) och [manifest.webmanifest](manifest.webmanifest).
 
 ## Köra lokalt
 
@@ -15,15 +15,15 @@ Kräver [Caddy](https://caddyserver.com/).
 
 ## Styrning
 
-| Rörelse | Funktion |
-| --- | --- |
-| Luta åt vänster/höger | Volym |
-| Luta framåt/bakåt | Ljus |
-| Markören på en pil, sedan skaka | Föregående/nästa låt |
-
-Håll telefonen som du brukar när du trycker på **Starta**. Det läget blir mitten. Tryck på **Kalibrera** för att sätta ett nytt mittläge.
-
-Piltangenterna flyttar markören och mellanslag byter låt. Knappen **Skaka** visas när gyro saknas. Markören går inte att flytta med mus eller finger.
+- Den gröna pucken följer telefonens lutning över hela skärmen.
+- Åt sidan styr volymen och framåt/bakåt styr ljuset. Ljuset visas som en vit cirkel som växer ut från pucken; helt mörkt är skärmen svart.
+- Kör pucken in i en blå knapp för att byta låt. Knappen flyttas till en ny slumpad plats och puckens färg glider i spektrumet.
+- Med Philips Hue kopplat finns en gul lampknapp per lampa. Kör pucken in i en lampknapp för att välja vilken lampa som styrs. Den valda lampan lyser starkare.
+- Kör in i den svarta bomben för en slumpad låt: BOOM! Med Home Assistant hoppar den i stället fram 1–4 låtar.
+- Låttiteln skrivs ut stort i bakgrunden.
+- Dubbeltryck på skärmen för att kalibrera om.
+- Skaka telefonen för att komma tillbaka till startskärmen. Rummet blir rött och säger VÄLKOMMEN ÅTER.
+- Lägg till sidan på hemskärmen för helskärm. Skärmen hålls tänd medan appen används.
 
 ## Home Assistant
 
@@ -106,8 +106,8 @@ Det finns inga automatiska tester. Testa manuellt:
 
 1. Kör `caddy run` och öppna http://localhost:8080.
 2. Tryck på **Starta**.
-3. Flytta markören med piltangenterna. Volym- och ljusvärdena i appen ändras.
-4. Flytta markören till en pil och tryck på mellanslag. Låten byts.
+3. Styr pucken med piltangenterna. Volym och ljus ändras.
+4. Styr pucken in i en blå knapp, eller klicka på knappen, för att byta låt. Tangenten C kalibrerar. Esc gör samma sak som att skaka.
 5. Med Home Assistant eller Hue inkopplat: kontrollera att lampan och spelaren reagerar.
 
 ### Testa gyro på telefon
