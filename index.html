@@ -7,9 +7,9 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Dumb Home">
+<meta name="apple-mobile-web-app-title" content="Lustiga Huset">
 <link rel="manifest" href="manifest.webmanifest">
-<title>Dumb Home</title>
+<title>Lustiga Huset</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600&family=Sniglet:wght@800&family=Barlow+Semi+Condensed:ital,wght@0,800;1,600&display=swap" rel="stylesheet">
@@ -139,8 +139,8 @@ button:focus-visible{outline:2px solid #fff;outline-offset:3px}
   border:3px solid hsl(212 100% 65%);box-shadow:0 0 18px hsl(212 100% 60% / .7);animation:burst .55s ease-out forwards}
 @keyframes burst{from{scale:.7;opacity:1}to{scale:2.8;opacity:0}}
 
-/* Weather button: yellow glass with an outline icon */
-.target.sky{--hue:44;--glow-alpha:.55}
+/* Weather button: orange glass, apart from the yellow lamp buttons with an outline icon */
+.target.sky{--hue:28;--glow-alpha:.55}
 .target.sky svg{fill:none;stroke-width:2.2;width:56%;height:56%}
 
 /* Weather report: the song text fades out, a big weather icon and the description take its place.
@@ -259,7 +259,7 @@ button:focus-visible{outline:2px solid #fff;outline-offset:3px}
   </div>
   <p class="bgtitle measure" id="measure" aria-hidden="true"></p>
   <div class="tint" id="tint"></div>
-  <div class="logo" aria-hidden="true" id="logo"><span data-text="Dumb">Dumb</span><span data-text="Home">Home</span></div>
+  <div class="logo" aria-hidden="true" id="logo"><span data-text="Lustiga">Lustiga</span><span data-text="Huset">Huset</span></div>
   <button class="target glass" id="tPrev" type="button" aria-label="Föregående låt" tabindex="-1">
     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5.5 7v10"/><path d="M18.5 7.5 10.5 12l8 4.5z"/></svg>
   </button>
@@ -279,14 +279,14 @@ button:focus-visible{outline:2px solid #fff;outline-offset:3px}
 
 <div class="start" id="start">
   <div class="start-inner">
-    <div class="logo" aria-hidden="true"><span data-text="Dumb">Dumb</span><span data-text="Home">Home</span></div>
-    <h1 class="sr-only">Dumb Home</h1>
+    <div class="logo" aria-hidden="true"><span data-text="Lustiga">Lustiga</span><span data-text="Huset">Huset</span></div>
+    <h1 class="sr-only">Lustiga Huset</h1>
     <ul class="steps">
       <li><span>↔</span><div><b>Luta åt vänster eller höger</b> för att sänka eller höja volymen.</div></li>
       <li><span>↕</span><div><b>Luta framåt eller bakåt</b> för att göra rummet ljusare eller mörkare.</div></li>
       <li><span>●</span><div><b>Styr den gröna pucken in i en blå knapp</b> för att byta låt.</div></li>
       <li><span>✸</span><div><b>Kör in i den svarta bomben</b> för en slumpad låt.</div></li>
-      <li><span>☁</span><div><b>Kör in i den gula väderknappen</b> för att se vädret där du är.</div></li>
+      <li><span>☁</span><div><b>Kör in i den orange väderknappen</b> för att se vädret där du är.</div></li>
       <li><span>≋</span><div><b>Skaka telefonen</b> för att komma tillbaka hit.</div></li>
     </ul>
     <p class="gyro-msg hidden" id="gyroMsg" role="alert"></p>
@@ -1089,7 +1089,7 @@ import {fetchWeather,weatherIcon,weatherText,BUTTON_ICON,SAD_ICON} from './weath
     if(!isLoggedIn()){spStatus.textContent="Inte inloggad än. Gör steg 3.";return;}
     try{
       const devices=await listDevices();
-      spDevice.replaceChildren(new Option("Välj enhet",""),new Option("Den här webbläsaren (spelar här)",BROWSER_DEVICE),...devices.filter(d=>d.name!=="Dumb Home").map(d=>new Option(d.name+(d.active?" (aktiv)":""),d.id)));
+      spDevice.replaceChildren(new Option("Välj enhet",""),new Option("Den här webbläsaren (spelar här)",BROWSER_DEVICE),...devices.filter(d=>d.name!=="Lustiga Huset").map(d=>new Option(d.name+(d.active?" (aktiv)":""),d.id)));
       spDevice.value=selected||"";
       spStatus.textContent=devices.length?"Inloggad. Välj enhet i steg 4 och tryck på Spara.":"Inloggad, men inga enheter hittades. Starta Spotify på enheten och tryck på Uppdatera listan.";
     }catch(_){spStatus.textContent="Kunde inte hämta enheter från Spotify.";}

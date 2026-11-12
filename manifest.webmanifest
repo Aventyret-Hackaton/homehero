@@ -1,6 +1,6 @@
 {
-  "name": "Dumb Home",
-  "short_name": "Dumb Home",
+  "name": "Lustiga Huset",
+  "short_name": "Lustiga Huset",
   "start_url": "./",
   "display": "standalone",
   "background_color": "#000000",

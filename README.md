@@ -1,4 +1,4 @@
-# Dumb Home
+# Lustiga Huset
 
 Webbapp som styr volym, ljus och låtbyte genom att luta telefonen. Musiken spelas i webbläsaren och ljuset är simulerat tills du kopplar in Home Assistant eller Philips Hue.
 
@@ -20,7 +20,7 @@ Kräver [Caddy](https://caddyserver.com/).
 - Kör pucken in i en blå knapp för att byta låt. Knappen flyttas till en ny slumpad plats och puckens färg glider i spektrumet.
 - Med Philips Hue kopplat finns en gul lampknapp per lampa. Kör pucken in i en lampknapp för att välja vilken lampa som styrs. Den valda lampan lyser starkare.
 - Kör in i den svarta bomben för en slumpad låt: BOOM! Med Home Assistant hoppar den i stället fram 1–4 låtar.
-- Kör in i den gula väderknappen för att se vädret där du är: låttexten tonar ut och en stor väderikon med beskrivning och temperatur visas en stund i stället. Sedan dyker knappen upp på ett nytt ställe. Platsen avrundas till ungefär 1 km och skickas till [Open-Meteo](https://open-meteo.com/) (gratis, ingen nyckel).
+- Kör in i den orange väderknappen för att se vädret där du är: låttexten tonar ut och en stor väderikon med beskrivning och temperatur visas en stund i stället. Sedan dyker knappen upp på ett nytt ställe. Platsen avrundas till ungefär 1 km och skickas till [Open-Meteo](https://open-meteo.com/) (gratis, ingen nyckel).
 - Låttiteln skrivs ut stort i bakgrunden.
 - Dubbeltryck på skärmen för att kalibrera om.
 - Skaka telefonen för att komma tillbaka till startskärmen. Rummet blir rött och säger HEJ DÅ!
