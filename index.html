@@ -39,14 +39,14 @@ body{
 
 header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 18px 10px}
 .brand{font-weight:800;font-size:1.3rem;letter-spacing:-.025em}
-.tools{display:flex;gap:8px;align-items:center}
+.tools{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:8px;align-items:center}
 .status{font-size:.82rem;color:var(--muted);display:flex;gap:6px;align-items:center}
 .dot{width:8px;height:8px;border-radius:50%;background:var(--muted)}
 .status.on .dot{background:var(--zone)}
 .status:not(.on){color:var(--ink)}
 .status.on{cursor:default;border-color:transparent}
 button{font:inherit;color:inherit;cursor:pointer}
-.ghost{font-size:.85rem;background:none;border:1px solid var(--line);border-radius:999px;padding:6px 12px}
+.ghost{white-space:nowrap;font-size:.85rem;background:none;border:1px solid var(--line);border-radius:999px;padding:6px 12px}
 button:focus-visible{outline:2px solid var(--zone);outline-offset:2px}
 .hidden{display:none!important}
 
@@ -112,12 +112,21 @@ footer{padding:14px 18px 18px;display:grid;gap:14px}
 .fine{color:var(--muted);font-size:.85rem;line-height:1.4;margin-top:14px}
 
 .secondary{width:100%;font-size:.95rem;padding:12px;margin-top:10px;border:1px solid var(--line);border-radius:18px;background:none}
-.ha-dialog{max-width:420px;width:calc(100% - 32px);border:0;border-radius:24px;padding:22px;background:var(--surface);color:var(--ink)}
+.ha-dialog{max-height:calc(100% - 32px);overflow-y:auto;max-width:420px;width:calc(100% - 32px);border:0;border-radius:24px;padding:22px;background:var(--surface);color:var(--ink)}
 .ha-dialog::backdrop{background:rgba(0,0,0,.5)}
 .ha-form{display:grid;gap:12px}
 .ha-form h2{margin:0;font-size:1.3rem}
 .ha-form label{display:grid;gap:4px;font-size:.85rem;color:var(--muted)}
-.ha-form input{font:inherit;font-size:1rem;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:10px 12px;-webkit-user-select:text;user-select:text}
+.ha-form input,.ha-form select{font:inherit;font-size:1rem;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:10px 12px;-webkit-user-select:text;user-select:text}
+.ha-steps{margin:0;padding-left:20px;display:grid;gap:16px;font-size:.95rem;line-height:1.4}
+.ha-steps li{padding-left:4px}
+.ha-steps li>*{display:block;margin-top:6px}
+.ha-steps input,.ha-steps select{width:100%}
+.ha-steps li>b{margin-top:0;font-weight:600}
+.ha-steps .fine{margin-top:4px}
+.ha-link{text-decoration:none;text-align:center;width:fit-content}
+.ha-link:not([href]){opacity:.5}
+.ha-status{margin:0;padding:10px 12px;border-radius:12px;background:var(--bg);font-size:.9rem;line-height:1.4}
 .ha-actions{display:flex;gap:8px;justify-content:flex-end}
 @media (prefers-reduced-motion:reduce){
   .zone,.zone svg,.hint{transition:none}
@@ -132,6 +141,7 @@ footer{padding:14px 18px 18px;display:grid;gap:14px}
     <div class="tools">
       <button class="ghost status" id="status" aria-live="polite"><span class="dot"></span><span id="statusText">Slå på gyro</span></button>
       <button class="ghost hidden" id="shakeBtn" title="Mellanslag fungerar också">Skaka</button>
+      <button class="ghost" id="lightBtn">Lampa</button>
       <button class="ghost" id="calBtn">Kalibrera</button>
     </div>
   </header>
@@ -184,6 +194,7 @@ footer{padding:14px 18px 18px;display:grid;gap:14px}
     </ul>
     <button class="primary" id="startBtn">Starta</button>
     <button class="secondary" id="haBtn" type="button">Home Assistant</button>
+    <button class="secondary" id="hueBtn" type="button">Philips Hue</button>
     <p class="fine">Håll telefonen som du brukar när du trycker på Starta – det läget blir mitten. Musiken spelas här i webbläsaren och ljuset är simulerat. Utan gyro styr du med piltangenterna och trycker på Skaka.</p>
   </div>
 </div>
@@ -202,8 +213,51 @@ footer{padding:14px 18px 18px;display:grid;gap:14px}
     </div>
   </form>
 </dialog>
+<dialog class="ha-dialog" id="lightDialog" aria-labelledby="lightTitle">
+  <form class="ha-form" method="dialog">
+    <h2 id="lightTitle">Välj lampa</h2>
+    <select id="lightSelect" aria-label="Lampa"><option value="">Välj lampa</option></select>
+    <p class="ha-status" id="lightStatus" role="status" aria-live="polite"></p>
+    <div class="ha-actions"><button class="ghost" type="submit">Stäng</button></div>
+  </form>
+</dialog>
+<dialog class="ha-dialog" id="hueDialog" aria-labelledby="hueTitle">
+  <form class="ha-form" id="hueForm" method="dialog">
+    <h2 id="hueTitle">Philips Hue</h2>
+    <p class="fine">Styr en lampa via Hue Bridge. Telefonen eller datorn måste vara på samma wifi som bryggan.</p>
+    <ol class="ha-steps">
+      <li>
+        <b>Skriv in bryggans IP-adress.</b>
+        <span class="fine">Hitta den i Hue-appen: Inställningar → Bridges → tryck på bryggan → tryck på <i>i</i>.</span>
+        <input name="bridge" type="text" inputmode="decimal" placeholder="192.168.1.50" aria-label="Bridge-adress (IP)" autocomplete="off">
+      </li>
+      <li>
+        <b>Godkänn bryggans certifikat.</b>
+        <span class="fine">Öppna bryggan i en ny flik. Webbläsaren varnar. Välj Avancerat och sedan Fortsätt. Kommer en sida med text eller en tom sida är det rätt. Stäng fliken och kom tillbaka hit.</span>
+        <a class="ghost ha-link" id="hueOpen" target="_blank" rel="noopener">Öppna bryggan i ny flik</a>
+      </li>
+      <li>
+        <b>Tryck på den runda länkknappen på bryggan. Tryck sedan här inom 30 sekunder.</b>
+        <button class="ghost" type="button" id="huePair">Koppla</button>
+        <input name="key" type="password" aria-label="Applikationsnyckel" placeholder="Fylls i vid koppling" autocomplete="off">
+      </li>
+      <li>
+        <b>Välj vilken lampa som ska styras.</b>
+        <select name="light" id="hueLight" aria-label="Lampa"><option value="">Välj lampa</option></select>
+      </li>
+      <li><b>Tryck på Spara.</b></li>
+    </ol>
+    <p class="ha-status" id="hueStatus" role="status" aria-live="polite">Börja med steg 1.</p>
+    <div class="ha-actions">
+      <button class="ghost" type="button" id="hueClear">Rensa</button>
+      <button class="ghost" type="button" id="hueCancel">Avbryt</button>
+      <button class="ghost" type="submit" value="save">Spara</button>
+    </div>
+  </form>
+</dialog>
 <script type="module">
 import {createHa,loadSettings,saveSettings} from './ha.js';
+import {createHue,loadSettings as loadHueSettings,saveSettings as saveHueSettings,pair} from './hue.js';
 (function(){
   const tracks=[
     {t:"Kvällsdis",a:"Lågmält",ch:[220,277.18,329.63,415.3]},
@@ -219,6 +273,7 @@ import {createHa,loadSettings,saveSettings} from './ha.js';
   const clamp=v=>Math.min(1,Math.max(0,v));
 
   let ha=createHa(loadSettings());
+  let hue=createHue(loadHueSettings());
   let tx=.5,ty=.5,cx=.5,cy=.5;
   let vol=.5,light=.5,zone=0,idx=0;
   let b0=null,g0=null,gyro=false,lastShake=0,prevZ=null,hintTimer=null;
@@ -280,6 +335,7 @@ import {createHa,loadSettings,saveSettings} from './ha.js';
 
   // ---------- Pointer / keyboard fallback ----------
   document.addEventListener("keydown",e=>{
+    if(e.target.closest&&e.target.closest("dialog")) return;
     const s=.04;
     if(e.key==="ArrowLeft"){tx=clamp(tx-s);e.preventDefault();}
     else if(e.key==="ArrowRight"){tx=clamp(tx+s);e.preventDefault();}
@@ -400,7 +456,8 @@ import {createHa,loadSettings,saveSettings} from './ha.js';
     $("vVol").textContent=vp+" %";$("bVol").style.width=vp+"%";
     $("vLight").textContent=lp+" %";$("bLight").style.width=lp+"%";
 
-    if(ha.hasLight) ha.setLight(light);
+    if(hue.hasLight) hue.setLight(light);
+    else if(ha.hasLight) ha.setLight(light);
     if(ha.hasMedia) ha.setVolume(vol);
     if(master) master.gain.setTargetAtTime(vol*vol*.7,ac.currentTime,.05);
     requestAnimationFrame(frame);
@@ -418,6 +475,80 @@ import {createHa,loadSettings,saveSettings} from './ha.js';
     const s={};
     for(const name of ["url","token","light","media"]) s[name]=haForm.elements[name].value.trim();
     saveSettings(s);ha=createHa(s);renderSource();
+  });
+
+  // ---------- Philips Hue settings ----------
+  const hueDialog=$("hueDialog"),hueForm=$("hueForm"),hueLight=$("hueLight"),hueStatus=$("hueStatus");
+  function hueFormSettings(){
+    return {bridge:hueForm.elements.bridge.value.trim(),key:hueForm.elements.key.value.trim(),light:hueLight.value};
+  }
+  async function fillHueLights(selected){
+    const s=hueFormSettings();
+    if(!s.bridge||!s.key) return;
+    try{
+      const lights=await createHue(s).listLights();
+      hueLight.replaceChildren(new Option("Välj lampa",""),...lights.map(l=>new Option(l.name,l.id)));
+      hueLight.value=selected||"";
+      hueStatus.textContent=lights.length+" lampor hittades. Välj lampa i steg 4 och tryck på Spara.";
+    }catch(err){
+      hueStatus.textContent=err.message==="Failed to fetch"?"Kunde inte nå bryggan. Kontrollera adressen i steg 1 och godkänn certifikatet i steg 2.":err.message;
+    }
+  }
+  $("hueBtn").addEventListener("click",()=>{
+    const s=loadHueSettings();
+    hueForm.elements.bridge.value=s.bridge||"";hueForm.elements.key.value=s.key||"";
+    hueLight.replaceChildren(new Option("Välj lampa",""));
+    updateHueLink();
+    hueStatus.textContent=s.key?"Redan kopplad. Välj lampa och tryck på Spara.":"Börja med steg 1.";
+    fillHueLights(s.light);
+    hueDialog.showModal();
+  });
+  function updateHueLink(){
+    const bridge=hueForm.elements.bridge.value.trim();
+    if(bridge) $("hueOpen").href="https://"+bridge; else $("hueOpen").removeAttribute("href");
+  }
+  hueForm.elements.bridge.addEventListener("input",updateHueLink);
+  $("huePair").addEventListener("click",async()=>{
+    const bridge=hueForm.elements.bridge.value.trim();
+    if(!bridge){hueStatus.textContent="Skriv in bryggans IP-adress i steg 1 först.";return;}
+    hueStatus.textContent="Kopplar …";
+    try{
+      hueForm.elements.key.value=await pair(bridge);
+      hueStatus.textContent="Kopplad. Välj lampa i steg 4.";
+      await fillHueLights("");
+    }catch(err){
+      hueStatus.textContent=err.message==="Failed to fetch"
+        ?"Kunde inte nå bryggan. Kontrollera adressen i steg 1 och godkänn certifikatet i steg 2."
+        :err.message==="link button not pressed"?"Länkknappen var inte intryckt. Tryck på den på bryggan och tryck sedan på Koppla igen inom 30 sekunder.":err.message;
+    }
+  });
+  $("hueCancel").addEventListener("click",()=>hueDialog.close());
+  $("hueClear").addEventListener("click",()=>{saveHueSettings({});hue=createHue({});hueDialog.close();});
+  hueForm.addEventListener("submit",()=>{const s=hueFormSettings();saveHueSettings(s);hue=createHue(s);});
+
+  // ---------- Pick light while running ----------
+  const lightDialog=$("lightDialog"),lightSelect=$("lightSelect"),lightStatus=$("lightStatus");
+  $("lightBtn").addEventListener("click",async()=>{
+    const s=loadHueSettings();
+    if(!s.bridge||!s.key){showHint("Koppla Philips Hue först. Du hittar knappen på startskärmen efter en omladdning.",4000);return;}
+    lightStatus.textContent="Hämtar lampor …";
+    lightSelect.replaceChildren(new Option("Välj lampa",""));
+    lightDialog.showModal();
+    try{
+      const lights=await createHue(s).listLights();
+      lightSelect.replaceChildren(new Option("Välj lampa",""),...lights.map(l=>new Option(l.name,l.id)));
+      lightSelect.value=s.light||"";
+      lightStatus.textContent=lights.length?"":"Inga lampor hittades.";
+    }catch(_){
+      lightStatus.textContent="Kunde inte nå bryggan.";
+    }
+  });
+  lightSelect.addEventListener("change",()=>{
+    if(!lightSelect.value) return;
+    const s={...loadHueSettings(),light:lightSelect.value};
+    saveHueSettings(s);hue=createHue(s);
+    lightDialog.close();
+    showHint("Lampa vald: "+lightSelect.selectedOptions[0].textContent,2000);
   });
 
   renderSource();

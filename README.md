@@ -1,21 +1,50 @@
 # HomeHero
 
-Webbapp som styr volym, ljus och låtbyte genom att luta och skaka telefonen. Musiken spelas i webbläsaren och ljuset är simulerat.
+Webbapp som styr volym, ljus och låtbyte genom att luta och skaka telefonen. Musiken spelas i webbläsaren och ljuset är simulerat tills du kopplar in Home Assistant eller Philips Hue.
 
-Statisk webbapp: [index.html](index.html) och [ha.js](ha.js).
+Statisk webbapp: [index.html](index.html), [ha.js](ha.js) och [hue.js](hue.js).
+
+## Köra lokalt
+
+Kräver [Caddy](https://caddyserver.com/).
+
+1. Öppna en terminal i projektmappen.
+2. Kör `caddy run`.
+3. Öppna http://localhost:8080 i webbläsaren.
+4. Stoppa servern med `Ctrl+C`.
+
+## Styrning
+
+| Rörelse | Funktion |
+| --- | --- |
+| Luta åt vänster/höger | Volym |
+| Luta framåt/bakåt | Ljus |
+| Markören på en pil, sedan skaka | Föregående/nästa låt |
+
+Håll telefonen som du brukar när du trycker på **Starta**. Det läget blir mitten. Tryck på **Kalibrera** för att sätta ett nytt mittläge.
+
+Piltangenterna flyttar markören och mellanslag byter låt. Knappen **Skaka** visas när gyro saknas. Markören går inte att flytta med mus eller finger.
 
 ## Home Assistant
 
-Tryck på **Home Assistant** på startskärmen och fyll i:
+Styr ljus och mediaspelare. Mediaspelaren ersätter ljudet i webbläsaren.
 
-- Adress till Home Assistant.
-- Long-Lived Access Token (skapas under din användarprofil i Home Assistant).
-- Ljus (`light.…`): styrs av lutning framåt/bakåt.
-- Mediaspelare (`media_player.…`): volym styrs av lutning åt sidan, skaka byter låt.
+### 1. Skapa en token
 
-Inställningarna sparas i webbläsaren på enheten. Utan mediaspelare spelas ljud i webbläsaren.
+1. Öppna Home Assistant och klicka på ditt namn nere till vänster (din profil).
+2. Välj fliken **Säkerhet**.
+3. Gå till **Långlivade åtkomsttokens** och välj **Skapa token**.
+4. Kopiera token. Den visas bara en gång.
 
-Home Assistant måste tillåta appens adress i `configuration.yaml`:
+### 2. Hitta entity-id
+
+1. Gå till **Inställningar → Enheter och tjänster → Entiteter**.
+2. Sök efter lampan eller spelaren.
+3. Kopiera kolumnen **Entitets-ID**, till exempel `light.vardagsrum` eller `media_player.vardagsrum`.
+
+### 3. Tillåt appens adress
+
+Lägg till adressen som du öppnar appen från i `configuration.yaml`. Starta sedan om Home Assistant.
 
 ```yaml
 http:
@@ -23,28 +52,72 @@ http:
     - http://localhost:8080
 ```
 
-Om appen körs över HTTPS måste Home Assistant också nås över HTTPS.
+- Adressen måste stämma exakt, inklusive `http://` eller `https://` och portnummer.
+- Använd en rad per adress, till exempel en för datorn och en för telefonen.
+- Körs appen över HTTPS måste Home Assistant också nås över HTTPS.
 
-## Köra lokalt
+### 4. Fyll i appen
 
-Kräver [Caddy](https://caddyserver.com/).
+1. Tryck på **Home Assistant** på startskärmen.
+2. Fyll i adress, till exempel `http://homeassistant.local:8123`. Använd IP-adressen om namnet inte fungerar.
+3. Klistra in token.
+4. Fyll i `light.…` för ljus och `media_player.…` för volym och låtbyte. Fälten är valfria.
+5. Tryck på **Spara**.
 
-```sh
-caddy run
-```
+Inställningarna sparas i webbläsaren på enheten. **Rensa** tar bort dem.
 
-Öppna http://localhost:8080.
+## Philips Hue
+
+Styr ljuset direkt mot Hue Bridge. Volym och låtbyte hanteras av webbläsaren eller Home Assistant. Hue har företräde framför Home Assistant för ljus.
+
+### 1. Hitta bryggans IP-adress
+
+- Öppna Hue-appen och gå till **Inställningar → Bridges**, tryck på bryggan och sedan på **i**.
+- Eller leta efter bryggan i routerns lista över enheter.
+
+Enheten som kör appen måste vara på samma nätverk som bryggan.
+
+### 2. Godkänn certifikatet
+
+Bryggan har ett självsignerat certifikat. Webbläsaren blockerar anrop tills du godkänt det.
+
+1. Öppna `https://<bridge-ip>` i webbläsaren som kör appen.
+2. Välj **Avancerat** och sedan **Fortsätt till …**.
+3. Upprepa på varje enhet och webbläsare som ska styra ljuset.
+
+### 3. Koppla
+
+1. Tryck på **Philips Hue** på startskärmen.
+2. Fyll i bridge-adressen.
+3. Tryck på länkknappen på bryggan.
+4. Tryck på **Koppla** inom 30 sekunder. Applikationsnyckeln fylls i.
+5. Välj lampa i listan och tryck på **Spara**.
+
+Felmeddelanden:
+
+- **Kunde inte nå bryggan:** certifikatet är inte godkänt, eller adressen är fel.
+- **link button not pressed:** tryck på länkknappen och försök igen.
+
+Inställningarna sparas i webbläsaren på enheten. **Rensa** tar bort dem.
 
 ## Testa lokalt
 
-Det finns inga automatiska tester. Testa manuellt i webbläsaren:
+Det finns inga automatiska tester. Testa manuellt:
 
-1. Klicka på **Starta**.
-2. Använd piltangenterna för att styra volym (vänster–höger) och ljus (upp–ner).
-3. Placera markören på en pil och tryck på **Skaka** eller mellanslag för att byta låt.
+1. Kör `caddy run` och öppna http://localhost:8080.
+2. Tryck på **Starta**.
+3. Flytta markören med piltangenterna. Volym- och ljusvärdena i appen ändras.
+4. Flytta markören till en pil och tryck på mellanslag. Låten byts.
+5. Med Home Assistant eller Hue inkopplat: kontrollera att lampan och spelaren reagerar.
 
-Testa gyro på en telefon:
+### Testa gyro på telefon
+
+Gyro kräver HTTPS, utom på `localhost`.
 
 1. Anslut telefonen till samma nätverk som datorn.
-2. Gyro kräver HTTPS. Starta en tunnel, till exempel `caddy reverse-proxy --from <värdnamn> --to localhost:8080`, eller använd Chrome DevTools sensor-emulering (Sensors).
-3. Öppna adressen på telefonen och tryck på **Starta**.
+2. Starta en HTTPS-proxy: `caddy reverse-proxy --from https://<datorns-ip>:8443 --to localhost:8080`.
+3. Öppna `https://<datorns-ip>:8443` på telefonen och godkänn certifikatvarningen.
+4. Tryck på **Starta** och tillåt rörelsesensorer när frågan visas.
+5. På Android: tillåt **Rörelsesensorer** i webbplatsinställningarna om inga sensordata kommer fram.
+
+Gyro går också att testa på datorn med Chrome DevTools: öppna **Sensors** och välj en orientering under **Orientation**.
