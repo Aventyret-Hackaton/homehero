@@ -2,7 +2,7 @@
 
 Webbapp som styr volym, ljus och låtbyte genom att luta telefonen. Musiken spelas i webbläsaren och ljuset är simulerat tills du kopplar in Home Assistant eller Philips Hue.
 
-Statisk webbapp: [index.html](index.html), [ha.js](ha.js), [hue.js](hue.js) och [manifest.webmanifest](manifest.webmanifest).
+Statisk webbapp: [index.html](index.html), [ha.js](ha.js), [hue.js](hue.js), [spotify.js](spotify.js) och [manifest.webmanifest](manifest.webmanifest).
 
 ## Köra lokalt
 
@@ -10,7 +10,7 @@ Kräver [Caddy](https://caddyserver.com/).
 
 1. Öppna en terminal i projektmappen.
 2. Kör `caddy run`.
-3. Öppna http://localhost:8080 i webbläsaren.
+3. Öppna http://localhost:8080 i webbläsaren. Använd http://127.0.0.1:8080 om du ska koppla Spotify.
 4. Stoppa servern med `Ctrl+C`.
 
 ## Styrning
@@ -65,6 +65,37 @@ http:
 5. Tryck på **Spara**.
 
 Inställningarna sparas i webbläsaren på enheten. **Rensa** tar bort dem.
+
+## Spotify
+
+Spelar dina **Gillade låtar** på en Spotify-enhet, till exempel en högtalare. Kräver Spotify Premium. Spotify har företräde framför Home Assistant och ljudet i webbläsaren. Volym och låtbyte styr enheten.
+
+### 1. Öppna appen på rätt adress
+
+Spotify tillåter inte `http://localhost`. Öppna appen på `http://127.0.0.1:8080` eller över HTTPS.
+
+### 2. Skapa en app hos Spotify
+
+1. Gå till https://developer.spotify.com/dashboard och logga in.
+2. Välj **Create app**.
+3. Fyll i ett namn och en beskrivning.
+4. Skriv adressen som visas i appens Spotify-ruta som **Redirect URI**, till exempel `http://127.0.0.1:8080/`. Adressen måste stämma exakt.
+5. Välj **Web API** under "Which API/SDKs are you planning to use?" och spara.
+6. Öppna appens **Settings** och kopiera **Client ID**.
+
+### 3. Koppla i appen
+
+1. Tryck på **Spotify** på startskärmen.
+2. Klistra in Client ID.
+3. Tryck på **Logga in på Spotify** och godkänn. Du kommer tillbaka till appen.
+4. Starta Spotify på enheten som ska spela, och tryck på **Uppdatera listan** om enheten saknas.
+5. Välj enhet och tryck på **Spara**.
+
+Välj **Den här webbläsaren** som enhet för att spela musiken i webbläsaren, till exempel på telefonen. Då används Spotifys Web Playback SDK. Spotify stöder det inte officiellt i mobila webbläsare. Logga in på nytt efter uppdateringen, eftersom inloggningen behöver fler behörigheter. Inloggningen gäller per enhet och adress: på telefonen behöver du logga in där, och telefonens https-adress måste vara registrerad som Redirect URI hos Spotify.
+
+Tryck på **Starta**. Appen spelar ett slumpat urval av dina Gillade låtar. Skaka telefonen för att pausa.
+
+Inställningarna och inloggningen sparas i webbläsaren på enheten. **Rensa** tar bort dem.
 
 ## Philips Hue
 
