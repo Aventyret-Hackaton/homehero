@@ -4,6 +4,15 @@ Webbapp som styr volym, ljus och låtbyte genom att luta telefonen. Musiken spel
 
 Statisk webbapp: [index.html](index.html), [ha.js](ha.js), [hue.js](hue.js), [spotify.js](spotify.js), [weather.js](weather.js) och [manifest.webmanifest](manifest.webmanifest).
 
+## Deploya med GitHub Pages
+
+1. Gå till Settings → Pages i repot och välj Source: GitHub Actions.
+2. Pusha till `main`. Workflowen [pages.yml](.github/workflows/pages.yml) publicerar sidan.
+3. Adressen är `https://<organisation>.github.io/homehero/`.
+4. Lägg till den adressen som Redirect URI i Spotify-appen. Appen visar den under Spotify-inställningarna.
+
+Hue-bryggan och Home Assistant nås över lokalt nätverk. Webbläsaren blockerar `http://`-adresser från en HTTPS-sida.
+
 ## Köra lokalt
 
 Kräver [Caddy](https://caddyserver.com/).
